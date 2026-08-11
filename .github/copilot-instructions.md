@@ -1,0 +1,8 @@
+# プロジェクト共通インストラクション（GitHub Copilot）
+
+セッション開始時に、必ず以下の2ファイルをステアリングとして読み込み、内容を把握・遵守すること。
+
+- [README.md](../README.md): プロジェクト概要とドキュメント配置方針
+- [doc/rules/rules_for_ai_and_human.md](../doc/rules/rules_for_ai_and_human.md): AI・人間共通の作業/編集ルール
+
+上記ルールに反する提案・編集は行わない。ルールと実態に齟齬がある場合はユーザーに確認する。
