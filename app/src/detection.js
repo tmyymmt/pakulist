@@ -205,17 +205,20 @@ export function tokenize(normalizedText) {
   return new Set(tokens);
 }
 
-export function jaccardSimilarity(leftText, rightText) {
-  const left = tokenize(leftText);
-  const right = tokenize(rightText);
+function jaccardTokenSets(left, right) {
   if (left.size === 0 || right.size === 0) return 0;
 
+  const [smaller, larger] = left.size <= right.size ? [left, right] : [right, left];
   let intersection = 0;
-  for (const token of left) {
-    if (right.has(token)) intersection += 1;
+  for (const token of smaller) {
+    if (larger.has(token)) intersection += 1;
   }
-  const union = new Set([...left, ...right]).size;
+  const union = left.size + right.size - intersection;
   return union === 0 ? 0 : intersection / union;
+}
+
+export function jaccardSimilarity(leftText, rightText) {
+  return jaccardTokenSets(tokenize(leftText), tokenize(rightText));
 }
 
 class UnionFind {
@@ -272,17 +275,34 @@ function validateOptions(options) {
 function clusterApproximate(posts, settings) {
   const unionFind = new UnionFind(posts.length);
   const pairSimilarities = new Map();
+  const tokenIndex = new Map();
 
-  for (let leftIndex = 0; leftIndex < posts.length; leftIndex += 1) {
-    for (let rightIndex = leftIndex + 1; rightIndex < posts.length; rightIndex += 1) {
-      if (posts[leftIndex].account.toLocaleLowerCase('en-US') === posts[rightIndex].account.toLocaleLowerCase('en-US')) continue;
-      const similarity = jaccardSimilarity(posts[leftIndex].normalizedText, posts[rightIndex].normalizedText);
+  // Jaccard類似度が閾値以上の投稿ペアは、必ず少なくとも1つのトークンを共有する。
+  // 共有トークンを持つ過去投稿だけを候補にし、比較不能な全組合せを避ける。
+  posts.forEach((post, rightIndex) => {
+    const candidateIndices = new Set();
+    for (const token of post.tokens) {
+      for (const leftIndex of tokenIndex.get(token) || []) {
+        candidateIndices.add(leftIndex);
+      }
+    }
+
+    for (const leftIndex of candidateIndices) {
+      const leftPost = posts[leftIndex];
+      if (leftPost.account.toLocaleLowerCase('en-US') === post.account.toLocaleLowerCase('en-US')) continue;
+      const similarity = jaccardTokenSets(leftPost.tokens, post.tokens);
       if (similarity >= settings.threshold) {
         unionFind.union(leftIndex, rightIndex);
         pairSimilarities.set(`${leftIndex}:${rightIndex}`, similarity);
       }
     }
-  }
+
+    for (const token of post.tokens) {
+      const indexedPosts = tokenIndex.get(token) || [];
+      indexedPosts.push(rightIndex);
+      tokenIndex.set(token, indexedPosts);
+    }
+  });
 
   const grouped = new Map();
   posts.forEach((post, index) => {
@@ -310,10 +330,14 @@ function clusterApproximate(posts, settings) {
 export function findDuplicateClusters(posts, options = DEFAULT_OPTIONS) {
   const settings = validateOptions(options);
   const validatedPosts = validatePosts(posts);
-  const preparedPosts = validatedPosts.map((post) => ({
-    ...post,
-    normalizedText: normalizeText(post.text, settings),
-  }));
+  const preparedPosts = validatedPosts.map((post) => {
+    const normalizedText = normalizeText(post.text, settings);
+    return {
+      ...post,
+      normalizedText,
+      tokens: tokenize(normalizedText),
+    };
+  });
 
   const exactGroups = new Map();
   for (const post of preparedPosts) {

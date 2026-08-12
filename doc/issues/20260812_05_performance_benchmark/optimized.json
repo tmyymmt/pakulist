@@ -1,0 +1,53 @@
+
+> pakulist-local-web-mvp@0.1.0 benchmark:json
+> node scripts/benchmark-detection.mjs --json
+
+{
+  "generatedAt": "2026-08-12T13:38:04.570Z",
+  "node": "v22.13.0",
+  "platform": "linux",
+  "arch": "x64",
+  "iterations": 1,
+  "results": [
+    {
+      "scenario": "exact",
+      "postCount": 1000,
+      "iterations": 1,
+      "clusterCount": 500,
+      "minMs": 14.26,
+      "maxMs": 14.26,
+      "averageMs": 14.26,
+      "postsPerSecond": 70137.98
+    },
+    {
+      "scenario": "approximate",
+      "postCount": 1000,
+      "iterations": 1,
+      "clusterCount": 0,
+      "minMs": 8.3,
+      "maxMs": 8.3,
+      "averageMs": 8.3,
+      "postsPerSecond": 120546.38
+    },
+    {
+      "scenario": "exact",
+      "postCount": 5000,
+      "iterations": 1,
+      "clusterCount": 2500,
+      "minMs": 67.33,
+      "maxMs": 67.33,
+      "averageMs": 67.33,
+      "postsPerSecond": 74264.24
+    },
+    {
+      "scenario": "approximate",
+      "postCount": 5000,
+      "iterations": 1,
+      "clusterCount": 0,
+      "minMs": 38.32,
+      "maxMs": 38.32,
+      "averageMs": 38.32,
+      "postsPerSecond": 130470.57
+    }
+  ]
+}

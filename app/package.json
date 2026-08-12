@@ -10,7 +10,9 @@
   "scripts": {
     "start": "node server.js",
     "test": "node --test",
-    "check": "node --check server.js && node --check src/detection.js && node --check public/app.js"
+    "benchmark": "node scripts/benchmark-detection.mjs",
+    "benchmark:json": "node scripts/benchmark-detection.mjs --json",
+    "check": "node --check server.js && node --check src/detection.js && node --check public/app.js && node --check scripts/benchmark-detection.mjs"
   },
   "license": "Apache-2.0"
 }
