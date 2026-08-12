@@ -601,3 +601,107 @@ export function clustersToCsv(clusters) {
   }
   return `${rows.join('\r\n')}\r\n`;
 }
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function reportPostHtml(post, role = '') {
+  const roleLabel = role === 'origin' ? '起点投稿' : role === 'candidate' ? '後発候補' : '証拠投稿';
+  return `<article class="post">
+    <p class="role">${escapeHtml(roleLabel)}</p>
+    <dl>
+      <dt>アカウント</dt><dd>@${escapeHtml(post.account)}</dd>
+      <dt>投稿日時</dt><dd>${escapeHtml(post.postedAt)}</dd>
+      <dt>投稿URL</dt><dd><a href="${escapeHtml(post.url)}" rel="noopener noreferrer">${escapeHtml(post.url)}</a></dd>
+    </dl>
+    <p class="text">${escapeHtml(post.text)}</p>
+  </article>`;
+}
+
+function reportClusterHtml(cluster) {
+  const posts = cluster.posts.map((post) => reportPostHtml(post)).join('\n');
+  return `<section class="evidence">
+    <h2>${escapeHtml(cluster.id)} — ${escapeHtml(cluster.matchType === 'exact' ? '完全一致' : '近似一致')}</h2>
+    <p>類似度: ${escapeHtml(cluster.similarity.toFixed(2))} / アカウント数: ${escapeHtml(cluster.accountCount)} / 投稿数: ${escapeHtml(cluster.postCount)}</p>
+    ${posts}
+  </section>`;
+}
+
+function reportCopyCandidateHtml(item, index) {
+  const seconds = Math.round(item.timeDifferenceMs / 1000);
+  return `<section class="evidence">
+    <h2>後発候補 ${String(index + 1).padStart(3, '0')} — ${escapeHtml(item.matchType === 'exact' ? '完全一致' : '近似一致')}</h2>
+    <p>類似度: ${escapeHtml(item.similarity.toFixed(2))} / 起点からの時刻差: ${escapeHtml(seconds)}秒</p>
+    ${reportPostHtml(item.origin, 'origin')}
+    ${reportPostHtml(item.candidate, 'candidate')}
+  </section>`;
+}
+
+export function evidenceReportToHtml({
+  clusters = [],
+  copyCandidates = [],
+  options = DEFAULT_OPTIONS,
+  origin = null,
+  generatedAt = new Date().toISOString(),
+} = {}) {
+  if (!Array.isArray(clusters) || !Array.isArray(copyCandidates)) {
+    throw new TypeError('証拠レポートのクラスタとコピー候補は配列にしてください。');
+  }
+
+  const settings = validateOptions(options);
+  const hasCopyCandidates = copyCandidates.length > 0;
+  const evidence = hasCopyCandidates
+    ? copyCandidates.map(reportCopyCandidateHtml).join('\n')
+    : clusters.map(reportClusterHtml).join('\n');
+  const originDescription = origin?.originPostId
+    ? `起点投稿ID: ${origin.originPostId}`
+    : origin?.originAccount
+      ? `起点アカウント: @${origin.originAccount.replace(/^@+/, '')}`
+      : '起点指定なし';
+
+  return `<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>pakulist 手動確認用証拠レポート</title>
+  <style>
+    body { max-width: 960px; margin: 0 auto; padding: 32px; color: #17221c; background: #f6f8f5; font-family: system-ui, -apple-system, "Noto Sans JP", sans-serif; line-height: 1.6; }
+    header, .evidence { margin: 0 0 20px; padding: 24px; border: 1px solid #cdd7ce; border-radius: 10px; background: #fff; }
+    h1, h2 { margin-top: 0; color: #0b513b; }
+    .caution { padding: 12px 16px; border-left: 4px solid #b66b00; background: #fff7e7; font-weight: 700; }
+    .settings { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; }
+    .post { margin-top: 16px; padding: 16px; border-left: 4px solid #9cb0a1; background: #f8faf8; }
+    .role { margin: 0 0 8px; color: #0b513b; font-weight: 800; }
+    .text { white-space: pre-wrap; overflow-wrap: anywhere; }
+    dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; margin: 0; }
+    dt { color: #536159; font-weight: 700; }
+    dd { margin: 0; overflow-wrap: anywhere; }
+    a { color: #07583f; }
+    @media print { body { max-width: none; padding: 0; background: #fff; } header, .evidence { break-inside: avoid; box-shadow: none; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>pakulist 手動確認用証拠レポート</h1>
+    <p class="caution">このレポートは文字列類似度と投稿時刻に基づく候補です。著作権侵害その他の法的結論ではなく、通報の最終判断・送信は利用者が行ってください。自動通報は行いません。</p>
+    <dl class="settings">
+      <dt>生成日時</dt><dd>${escapeHtml(generatedAt)}</dd>
+      <dt>判定モード</dt><dd>${hasCopyCandidates ? '後発コピー候補' : '重複投稿クラスタ'}</dd>
+      <dt>起点</dt><dd>${escapeHtml(originDescription)}</dd>
+      <dt>近似一致</dt><dd>${settings.approximate ? `有効（閾値 ${escapeHtml(settings.threshold.toFixed(2))}）` : '無効'}</dd>
+      <dt>比較時のURL除外</dt><dd>${settings.ignoreUrls ? '有効' : '無効'}</dd>
+      <dt>比較時のメンション除外</dt><dd>${settings.ignoreMentions ? '有効' : '無効'}</dd>
+      <dt>スクリーンショット</dt><dd>本レポートは自動取得・保存しません。必要な場合は利用者が規約と許可を確認して手動で添付してください。</dd>
+    </dl>
+  </header>
+  ${evidence || '<section class="evidence"><p>出力できる候補はありません。</p></section>'}
+</body>
+</html>`;
+}

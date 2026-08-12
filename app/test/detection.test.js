@@ -5,6 +5,7 @@ import {
   InputValidationError,
   clustersToCsv,
   copyCandidatesToCsv,
+  evidenceReportToHtml,
   findDuplicateClusters,
   findLaterCopyCandidates,
   jaccardSimilarity,
@@ -267,6 +268,42 @@ test('コピー候補CSVは起点、後発候補、時刻差を出力し、数�
   assert.match(csv, /"originId","originAccount","originUrl"/u);
   assert.match(csv, /"60","exact","1\.00"/u);
   assert.match(csv, /"'=beta"/u);
+});
+
+test('証拠レポートは判定設定・投稿証拠を含み、HTMLとして実行可能な本文をエスケープする', () => {
+  const clusters = findDuplicateClusters([
+    post({ id: 'a1', account: 'alpha', text: '<script>alert(1)</script> 同一本文' }),
+    post({ id: 'b1', account: 'beta', url: 'https://x.com/beta/status/1', text: '<script>alert(1)</script> 同一本文' }),
+  ]);
+  const report = evidenceReportToHtml({
+    clusters,
+    options: { threshold: 0.8, approximate: true, ignoreUrls: true, ignoreMentions: true },
+    generatedAt: '2026-08-12T00:00:00Z',
+  });
+
+  assert.match(report, /手動確認用証拠レポート/u);
+  assert.match(report, /2026-08-12T00:00:00Z/u);
+  assert.match(report, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/u);
+  assert.doesNotMatch(report, /<script>alert\(1\)<\/script>/u);
+  assert.match(report, /自動通報は行いません/u);
+});
+
+test('後発コピー候補の証拠レポートは起点・候補・時刻差を含む', () => {
+  const sourcePosts = [
+    post({ id: 'origin', account: 'alpha', postedAt: '2026-08-12T00:00:00Z', text: 'コピー候補レポート' }),
+    post({ id: 'later', account: 'beta', url: 'https://x.com/beta/status/1', postedAt: '2026-08-12T01:00:00Z', text: 'コピー候補レポート' }),
+  ];
+  const copyCandidates = findLaterCopyCandidates(sourcePosts, { originAccount: 'alpha' });
+  const report = evidenceReportToHtml({
+    copyCandidates,
+    origin: { originAccount: 'alpha' },
+    generatedAt: '2026-08-12T02:00:00Z',
+  });
+
+  assert.match(report, /後発コピー候補/u);
+  assert.match(report, /起点アカウント: @alpha/u);
+  assert.match(report, /起点からの時刻差: 3600秒/u);
+  assert.match(report, /後発候補/u);
 });
 
 test('出力CSVは引用符をエスケープし、数式形式の値を無害化する', () => {

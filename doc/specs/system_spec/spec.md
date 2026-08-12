@@ -77,17 +77,20 @@ JSONは上記オブジェクトの配列、または`posts`キーに同配列を
 | 起点指定（UC-03） | 未指定 | 起点投稿IDまたは起点アカウントを一方だけ指定すると、後発コピー候補モードで解析する。 |
 | 結果概要 | 0クラスタ、0投稿 | 入力成功時に件数と検出クラスタ数、または後発コピー候補数を表示する。 |
 | 結果一覧 | 空状態の説明 | クラスタごとの証拠投稿、投稿URL、Xの通報ヘルプへの外部リンクを表示する。 |
-| CSV出力 | 結果0件では無効 | 検出済みクラスタをUTF-8 CSVで端末へ保存する。 |
+| CSV出力 | 結果0件では無効 | 検出済みクラスタまたはUC-03後発候補をUTF-8 CSVで端末へ保存する。 |
+| 証拠レポート出力 | 結果0件では無効 | 候補注意、生成日時、判定設定、投稿URL・日時・本文、UC-03時の起点・候補・時刻差を含むHTMLを端末へ保存する。 |
 
 ## 6. 出力CSV仕様
 
-通常のクラスタ出力は`pakulist-results.csv`としてダウンロードする。列は`clusterId`、`matchType`、`similarity`、`accountCount`、`postCount`、`account`、`url`、`postedAt`、`text`の順とする。1つの証拠投稿を1行に出力する。
+通常のクラスタ出力は`pakulist-results.csv`としてダウンロードする。列は`clusterId`、`matchType`、`similarity`、`accountCount`、`postCount`、`account`、`url`、`postedAt`、`text`の順とする。UC-03後発候補は`pakulist-copy-candidates.csv`として起点・候補・時刻差を別列へ出力する。いずれも1つの証拠投稿または候補ペアを1行に出力する。
+
+`pakulist-evidence-report.html`は、候補注意、生成日時、判定設定、投稿証拠を含む閲覧・印刷用のHTMLレポートである。本文はHTMLエスケープし、保存・外部送信・自動通報は行わない。必要なPDF化は利用者がブラウザの印刷機能を明示操作して行う。詳細は`doc/specs/detail_design/evidence_package.md`を参照する。
 
 UC-03の後発コピー候補モードでは`pakulist-copy-candidates.csv`としてダウンロードする。列は`originId`、`originAccount`、`originUrl`、`originPostedAt`、`candidateId`、`candidateAccount`、`candidateUrl`、`candidatePostedAt`、`timeDifferenceSeconds`、`matchType`、`similarity`、`candidateText`の順とし、1候補を1行に出力する。
 
 ## 7. 外部連携とセキュリティ
 
-本MVPは外部APIを呼び出さず、入力データを保存・送信しない。保存済みX API Search JSONのローカル変換を受け入れるが、APIトークンや資格情報は扱わない。投稿URLおよびXの通報ヘルプは、利用者が明示的にクリックした場合だけ別タブで開く。Xからの直接データ取得は将来、SNSプロバイダーの差し替え可能なアダプターとして実装する。その際は`x_data_acquisition_policy.md`と`external_data_governance.md`に従い、許可、SNSの規約、開発者条件、レート制限、保持期間を満たすことを必須とする。
+本MVPは外部APIを呼び出さず、入力データを保存・送信しない。スクリーンショットも自動取得・保存・送信しない。必要なスクリーンショットは、利用者が規約・権限・保存方針を確認したうえで手動で取得・添付する。保存済みX API Search JSONのローカル変換を受け入れるが、APIトークンや資格情報は扱わない。投稿URLおよびXの通報ヘルプは、利用者が明示的にクリックした場合だけ別タブで開く。Xからの直接データ取得は将来、SNSプロバイダーの差し替え可能なアダプターとして実装する。その際は`x_data_acquisition_policy.md`と`external_data_governance.md`に従い、許可、SNSの規約、開発者条件、レート制限、保持期間を満たすことを必須とする。
 
 ## 8. 非機能要件
 

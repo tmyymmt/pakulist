@@ -23,6 +23,7 @@ SNS（初期対応は X）上で同一または実質同一の投稿をしてい
 | 詳細設計 | `doc/specs/detail_design/x_api_input_adapter.md` | 保存済みX API Search JSONを標準Post形式へ変換する入力アダプター |
 | 詳細設計 | `doc/specs/detail_design/performance_and_responsiveness.md` | 最大5,000件の近似一致解析における性能基準、候補絞り込み、処理中応答性 |
 | 詳細設計 | `doc/specs/detail_design/browser_e2e_testing.md` | ブラウザE2Eの画面操作、入力エラー、CSV出力、安全な外部リンク、CI実行 |
+| 詳細設計 | `doc/specs/detail_design/evidence_package.md` | 手動確認・印刷向けHTML証拠レポート、最小証拠セット、スクリーンショットの手動境界 |
 | 価格設計 | `doc/specs/pricing/monetization_policy.md` | 二層構造、有料機能の境界、LLM利用前提 |
 | 横断 | `doc/specs/evaluation_criteria.md` | 審査基準への適合性 |
 

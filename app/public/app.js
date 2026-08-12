@@ -3,6 +3,7 @@ import {
   InputValidationError,
   clustersToCsv,
   copyCandidatesToCsv,
+  evidenceReportToHtml,
   findDuplicateClusters,
   findLaterCopyCandidates,
   parseInput,
@@ -14,6 +15,7 @@ const elements = {
   analyzeButton: document.querySelector('#analyze-button'),
   approximate: document.querySelector('#approximate'),
   downloadButton: document.querySelector('#download-button'),
+  evidenceDownloadButton: document.querySelector('#evidence-download-button'),
   errorArea: document.querySelector('#error-area'),
   fileInput: document.querySelector('#post-file'),
   fileStatus: document.querySelector('#file-status'),
@@ -234,6 +236,7 @@ function renderCopyCandidates() {
     setEmptyState('指定した起点投稿・アカウントより後に投稿された一致候補は検出されませんでした。起点と設定を確認してください。');
     elements.resultsSummary.textContent = `${posts.length.toLocaleString('ja-JP')}件を解析し、後発コピー候補は0件でした。`;
     elements.downloadButton.disabled = true;
+    elements.evidenceDownloadButton.disabled = true;
     return;
   }
 
@@ -242,6 +245,7 @@ function renderCopyCandidates() {
   const originCount = new Set(copyCandidates.map((item) => item.origin.id)).size;
   elements.resultsSummary.textContent = `${posts.length.toLocaleString('ja-JP')}件を解析し、${originCount.toLocaleString('ja-JP')}件の起点から後発コピー候補 ${copyCandidates.length.toLocaleString('ja-JP')}件を表示しています。`;
   elements.downloadButton.disabled = false;
+  elements.evidenceDownloadButton.disabled = false;
 }
 
 function renderClusters() {
@@ -250,6 +254,7 @@ function renderClusters() {
     setEmptyState('異なるアカウント間で条件に一致する重複投稿は検出されませんでした。設定を確認するか、別の入力データをお試しください。');
     elements.resultsSummary.textContent = `${posts.length.toLocaleString('ja-JP')}件を解析し、検出クラスタは0件でした。`;
     elements.downloadButton.disabled = true;
+    elements.evidenceDownloadButton.disabled = true;
     return;
   }
 
@@ -258,6 +263,7 @@ function renderClusters() {
   const evidencePosts = clusters.reduce((total, cluster) => total + cluster.postCount, 0);
   elements.resultsSummary.textContent = `${posts.length.toLocaleString('ja-JP')}件を解析し、${clusters.length.toLocaleString('ja-JP')}件の検出クラスタ（証拠投稿 ${evidencePosts.toLocaleString('ja-JP')}件）を表示しています。`;
   elements.downloadButton.disabled = false;
+  elements.evidenceDownloadButton.disabled = false;
 }
 
 async function loadFile() {
@@ -268,6 +274,7 @@ async function loadFile() {
   analysisMode = 'clusters';
   elements.analyzeButton.disabled = true;
   elements.downloadButton.disabled = true;
+  elements.evidenceDownloadButton.disabled = true;
   hideError();
   setEmptyState('ファイルを解析しています。');
 
@@ -306,6 +313,7 @@ function setAnalysisPending(isPending) {
   elements.originPostId.disabled = isPending;
   elements.threshold.disabled = isPending || !elements.approximate.checked;
   elements.analyzeButton.disabled = isPending || !posts;
+  if (isPending) elements.evidenceDownloadButton.disabled = true;
 }
 
 async function analyze() {
@@ -313,6 +321,7 @@ async function analyze() {
   hideError();
   clusters = [];
   copyCandidates = [];
+  elements.evidenceDownloadButton.disabled = true;
   const origin = currentOrigin();
   analysisMode = origin ? 'copyCandidates' : 'clusters';
   setAnalysisPending(true);
@@ -341,22 +350,43 @@ async function analyze() {
   }
 }
 
-function downloadCsv() {
-  if (analysisMode === 'copyCandidates' ? copyCandidates.length === 0 : clusters.length === 0) return;
-  const content = analysisMode === 'copyCandidates'
-    ? copyCandidatesToCsv(copyCandidates)
-    : clustersToCsv(clusters);
-  const blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
+function downloadFile(content, type, fileName) {
+  const blob = new Blob([content], { type });
   const objectUrl = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = objectUrl;
-  link.download = analysisMode === 'copyCandidates'
-    ? 'pakulist-copy-candidates.csv'
-    : 'pakulist-results.csv';
+  link.download = fileName;
   document.body.append(link);
   link.click();
   link.remove();
   URL.revokeObjectURL(objectUrl);
+}
+
+function hasResults() {
+  return analysisMode === 'copyCandidates' ? copyCandidates.length > 0 : clusters.length > 0;
+}
+
+function downloadCsv() {
+  if (!hasResults()) return;
+  const content = analysisMode === 'copyCandidates'
+    ? copyCandidatesToCsv(copyCandidates)
+    : clustersToCsv(clusters);
+  downloadFile(
+    content,
+    'text/csv;charset=utf-8',
+    analysisMode === 'copyCandidates' ? 'pakulist-copy-candidates.csv' : 'pakulist-results.csv',
+  );
+}
+
+function downloadEvidenceReport() {
+  if (!hasResults()) return;
+  const content = evidenceReportToHtml({
+    clusters,
+    copyCandidates,
+    options: currentOptions(),
+    origin: currentOrigin(),
+  });
+  downloadFile(content, 'text/html;charset=utf-8', 'pakulist-evidence-report.html');
 }
 
 function updateThreshold() {
@@ -370,6 +400,7 @@ function resetResultsOnSettingChange() {
   copyCandidates = [];
   analysisMode = 'clusters';
   elements.downloadButton.disabled = true;
+  elements.evidenceDownloadButton.disabled = true;
   elements.resultsSummary.textContent = '設定が変わりました。再度「重複投稿を検出する」を選択してください。';
   setEmptyState('設定を変更しました。検出を再実行してください。');
 }
@@ -377,6 +408,7 @@ function resetResultsOnSettingChange() {
 elements.fileInput.addEventListener('change', loadFile);
 elements.analyzeButton.addEventListener('click', analyze);
 elements.downloadButton.addEventListener('click', downloadCsv);
+elements.evidenceDownloadButton.addEventListener('click', downloadEvidenceReport);
 elements.threshold.addEventListener('input', () => {
   updateThreshold();
   resetResultsOnSettingChange();
