@@ -78,12 +78,19 @@ JSONは上記オブジェクトの配列、または`posts`キーに同配列を
 | 結果概要 | 0クラスタ、0投稿 | 入力成功時に件数と検出クラスタ数、または後発コピー候補数を表示する。 |
 | 結果一覧 | 空状態の説明 | クラスタごとの証拠投稿、投稿URL、Xの通報ヘルプへの外部リンクを表示する。 |
 | CSV出力 | 結果0件では無効 | 検出済みクラスタをUTF-8 CSVで端末へ保存する。 |
+| 証拠パッケージ出力 | 結果0件では無効 | 判定設定、生成日時、候補の根拠・注意事項を含むHTMLを端末へ保存する。 |
 
 ## 6. 出力CSV仕様
 
 通常のクラスタ出力は`pakulist-results.csv`としてダウンロードする。列は`clusterId`、`matchType`、`similarity`、`accountCount`、`postCount`、`account`、`url`、`postedAt`、`text`の順とする。1つの証拠投稿を1行に出力する。
 
 UC-03の後発コピー候補モードでは`pakulist-copy-candidates.csv`としてダウンロードする。列は`originId`、`originAccount`、`originUrl`、`originPostedAt`、`candidateId`、`candidateAccount`、`candidateUrl`、`candidatePostedAt`、`timeDifferenceSeconds`、`matchType`、`similarity`、`candidateText`の順とし、1候補を1行に出力する。
+
+### HTML証拠パッケージ
+
+検出結果がある場合、`pakulist-evidence-package.html`として閲覧用・印刷用のHTMLを端末へ保存できる。出力には生成日時、解析モード、近似一致の有無・閾値・URL/メンション除外の設定、起点指定（ある場合）、判定種別、類似度、投稿URL、本文、投稿日時、アカウント、UC-03の時刻差を含める。出力には候補判定であること、利用者による最終確認が必要なこと、通報操作を自動化しないことを明記する。HTML本文は入力投稿をテキストとしてエスケープし、外部リソースを読み込まないCSPを付与する。
+
+スクリーンショットはアプリが取得・保存しない。添付が必要な場合は、利用者が投稿の公開範囲、利用許諾、SNSの規約を確認したうえで、必要最小限のものを自身の端末で取得・保管する。
 
 ## 7. 外部連携とセキュリティ
 

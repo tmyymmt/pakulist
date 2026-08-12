@@ -58,6 +58,18 @@ test('JSONを読み込み、候補を安全に表示し、CSVを保存できる'
   for await (const chunk of stream) csv += chunk;
   expect(csv).toContain('clusterId');
   expect(csv).toContain('https://x.com/alpha/status/1');
+
+  const evidenceDownloadPromise = page.waitForEvent('download');
+  await page.locator('#evidence-button').click();
+  const evidenceDownload = await evidenceDownloadPromise;
+  expect(evidenceDownload.suggestedFilename()).toBe('pakulist-evidence-package.html');
+  const evidenceStream = await evidenceDownload.createReadStream();
+  let evidenceHtml = '';
+  for await (const chunk of evidenceStream) evidenceHtml += chunk;
+  expect(evidenceHtml).toContain('Content-Security-Policy');
+  expect(evidenceHtml).toContain('確認して最終判断');
+  expect(evidenceHtml).toContain('スクリーンショットを取得・保存しません');
+  expect(evidenceHtml).toContain('&lt;img src=x onerror=alert(1)&gt;');
 });
 
 test('CSVを読み込み、URL・メンション無視の設定変更を反映する', async ({ page }) => {
