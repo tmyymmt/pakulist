@@ -6,7 +6,8 @@ import { fileURLToPath } from 'node:url';
 const directory = dirname(fileURLToPath(import.meta.url));
 const publicDirectory = resolve(directory, 'public');
 const sourceDirectory = resolve(directory, 'src');
-const host = '127.0.0.1';
+const host = process.env.HOST || '0.0.0.0';
+const displayHost = host === '0.0.0.0' ? 'localhost' : host;
 const port = Number.parseInt(process.env.PORT || '4173', 10);
 
 const contentTypes = {
@@ -83,5 +84,5 @@ const server = createServer(async (request, response) => {
 });
 
 server.listen(port, host, () => {
-  console.log(`pakulist local web app: http://${host}:${port}`);
+  console.log(`pakulist local web app: http://${displayHost}:${port}`);
 });
