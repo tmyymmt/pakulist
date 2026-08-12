@@ -84,4 +84,4 @@ JSONは上記オブジェクトの配列、または`posts`キーに同配列を
 
 ## 8. 非機能要件
 
-対応ブラウザは最新版のChrome、Edge、Firefox、Safariとする。5,000件以下の入力について、一般的なPC上で利用者の操作を妨げない時間内に結果を表示することを目標とする。近似比較は候補絞り込みにより不要な比較を除外し、Node.js上の固定ベンチマークでは近似一致5,000件を5,000ms以下とする。性能基準、測定条件、回帰チェック、Worker導入の判断条件は`doc/specs/detail_design/performance_and_responsiveness.md`を参照する。解析開始時には処理中状態を表示し、実行中の入力・設定変更を防止する。件数上限を超えるファイルは受け付けない。
+対応ブラウザは最新版のChrome、Edge、Firefox、Safariとする。5,000件以下の入力について、一般的なPC上で利用者の操作を妨げない時間内に結果を表示することを目標とする。近似比較は候補絞り込みにより不要な比較を除外し、Node.js上の固定ベンチマークでは近似一致5,000件を5,000ms以下とする。性能基準、測定条件、回帰チェック、Worker導入の判断条件は`doc/specs/detail_design/performance_and_responsiveness.md`を参照する。解析開始時には処理中状態を表示し、実行中の入力・設定変更を防止する。件数上限を超えるファイルは受け付けない。ファイル読込、入力エラー、設定変更、検出結果、CSV保存、安全な外部リンクをPlaywright Chromiumで自動E2E検証し、CIで再現する。詳細は`doc/specs/detail_design/browser_e2e_testing.md`を参照する。

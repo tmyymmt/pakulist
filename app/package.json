@@ -12,7 +12,12 @@
     "test": "node --test",
     "check": "node --check server.js && node --check src/detection.js && node --check public/app.js",
     "bench": "node benchmarks/detection-performance.mjs",
-    "bench:check": "node benchmarks/detection-performance.mjs --assert"
+    "bench:check": "node benchmarks/detection-performance.mjs --assert",
+    "test:e2e": "playwright test",
+    "test:all": "npm run check && npm test && npm run bench:check && npm run test:e2e"
   },
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@playwright/test": "^1.62.1"
+  }
 }
