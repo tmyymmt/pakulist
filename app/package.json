@@ -1,0 +1,16 @@
+{
+  "name": "pakulist-local-web-mvp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "正規取得済みの投稿データをブラウザ内で検出・証拠出力するローカルWebアプリ",
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test",
+    "check": "node --check server.js && node --check src/detection.js && node --check public/app.js"
+  },
+  "license": "Apache-2.0"
+}

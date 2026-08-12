@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="正規取得済みの投稿データから、異なるアカウント間の重複投稿をローカルで検出します。" />
+    <title>pakulist | 重複投稿の検出</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">本文へ移動</a>
+    <header class="site-header">
+      <div class="shell header-content">
+        <div>
+          <p class="eyebrow">LOCAL-ONLY DETECTION</p>
+          <h1>pakulist</h1>
+        </div>
+        <a class="text-link" href="#usage">利用前の確認</a>
+      </div>
+    </header>
+
+    <main id="main-content" class="shell page-content">
+      <section class="hero" aria-labelledby="hero-title">
+        <p class="eyebrow">決定的な判定だけを、端末内で。</p>
+        <h2 id="hero-title">重複投稿を、証拠の形に整理する。</h2>
+        <p>正規に取得したCSVまたはJSONを選択すると、同じ内容または近い内容を異なるアカウントから投稿している候補を検出します。投稿データはこのブラウザの外に送信・保存されません。</p>
+      </section>
+
+      <section id="usage" class="notice" aria-label="利用前の確認">
+        <h2>利用前の確認</h2>
+        <ul>
+          <li>入力するのは、SNSの規約・開発者条件に沿って取得した投稿データだけにしてください。</li>
+          <li>表示結果は候補です。違反の最終判断と通報は利用者が行ってください。</li>
+          <li>このアプリは自動通報、SNSへの投稿、外部API呼び出しを行いません。</li>
+        </ul>
+      </section>
+
+      <section class="panel" aria-labelledby="input-title">
+        <div class="section-heading">
+          <p class="step">01</p>
+          <div>
+            <h2 id="input-title">投稿データを選択</h2>
+            <p>UTF-8のCSVまたはJSONファイルを1つ選択してください。最大5,000件まで処理します。</p>
+          </div>
+        </div>
+        <label class="file-control" for="post-file">
+          <span>CSV / JSON ファイル</span>
+          <input id="post-file" type="file" accept=".csv,.json,application/json,text/csv" />
+        </label>
+        <p id="file-status" class="field-note" aria-live="polite">ファイルは未選択です。</p>
+        <details class="format-guide">
+          <summary>必要な列・キーを確認する</summary>
+          <p><code>id</code>、<code>account</code>、<code>url</code>、<code>postedAt</code>、<code>text</code> が必要です。日時はタイムゾーンを含むISO 8601形式、URLは <code>https://</code> で始めます。</p>
+        </details>
+      </section>
+
+      <section class="panel" aria-labelledby="settings-title">
+        <div class="section-heading">
+          <p class="step">02</p>
+          <div>
+            <h2 id="settings-title">判定を設定</h2>
+            <p>完全一致は常に検出します。近似一致は単語トークン集合の重なりで判定します。</p>
+          </div>
+        </div>
+        <div class="settings-grid">
+          <label class="toggle-row" for="approximate">
+            <input id="approximate" type="checkbox" checked />
+            <span>
+              <strong>近似一致も検出する</strong>
+              <small>意味の理解ではなく、決定的な文字列トークンの類似度を使います。</small>
+            </span>
+          </label>
+          <label class="range-row" for="threshold">
+            <span>
+              <strong>近似一致の閾値</strong>
+              <small>値が高いほど、より似た投稿だけを候補にします。</small>
+            </span>
+            <output id="threshold-value" for="threshold">0.80</output>
+            <input id="threshold" type="range" min="0.50" max="1.00" step="0.05" value="0.80" />
+          </label>
+          <label class="toggle-row" for="ignore-urls">
+            <input id="ignore-urls" type="checkbox" checked />
+            <span><strong>URLを比較から除外する</strong><small>本文中のURL差だけを無視します。</small></span>
+          </label>
+          <label class="toggle-row" for="ignore-mentions">
+            <input id="ignore-mentions" type="checkbox" checked />
+            <span><strong>メンションを比較から除外する</strong><small>本文中の<code>@account</code>差だけを無視します。</small></span>
+          </label>
+        </div>
+        <button id="analyze-button" class="primary-button" type="button" disabled>重複投稿を検出する</button>
+      </section>
+
+      <section class="panel results-panel" aria-labelledby="results-title">
+        <div class="section-heading results-heading">
+          <p class="step">03</p>
+          <div>
+            <h2 id="results-title">検出結果</h2>
+            <p id="results-summary" aria-live="polite">ファイルを選択して検出を実行してください。</p>
+          </div>
+          <button id="download-button" class="secondary-button" type="button" disabled>CSVを保存</button>
+        </div>
+        <div id="error-area" class="error-area" role="alert" hidden></div>
+        <div id="results-area" class="empty-state">
+          <p>検出クラスタはまだありません。</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="shell">
+        <p>pakulist OSS MVP — 検出結果は候補です。通報操作は自動化しません。</p>
+      </div>
+    </footer>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
