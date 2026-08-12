@@ -107,7 +107,10 @@
             <h2 id="results-title">検出結果</h2>
             <p id="results-summary" aria-live="polite">ファイルを選択して検出を実行してください。</p>
           </div>
-          <button id="download-button" class="secondary-button" type="button" disabled>CSVを保存</button>
+          <div class="result-actions">
+            <button id="evidence-button" class="secondary-button" type="button" disabled>証拠パッケージを保存</button>
+            <button id="download-button" class="secondary-button" type="button" disabled>CSVを保存</button>
+          </div>
         </div>
         <div id="error-area" class="error-area" role="alert" hidden></div>
         <div id="results-area" class="empty-state">
