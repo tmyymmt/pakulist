@@ -10,7 +10,11 @@
   "scripts": {
     "start": "node server.js",
     "test": "node --test",
-    "check": "node --check server.js && node --check src/detection.js && node --check public/app.js"
+    "test:e2e": "playwright test",
+    "check": "node --check server.js && node --check src/detection.js && node --check public/app.js && node --check playwright.config.js && node --check e2e/app.spec.js"
   },
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@playwright/test": "^1.62.1"
+  }
 }
