@@ -49,10 +49,13 @@ npm test
 |-- app                              # ローカルWebアプリの実装（詳細は各ディレクトリ内を参照）
 |-- doc                              # ドキュメント一式
 |   |-- issues                       # issue単位の変更仕様・作業計画
-|   |   `-- 20260812_01_local_web_mvp
-|   |       |-- 20260812_0000-handover.md # 作業状況・引継ぎ
-|   |       |-- 20260812_browser_check.md # ブラウザでの動作確認記録
-|   |       `-- work_plan.md         # ローカルWebアプリMVPの作業計画
+|   |   |-- 20260812_01_local_web_mvp
+|   |   |   |-- 20260812_0000-handover.md # 作業状況・引継ぎ
+|   |   |   |-- 20260812_browser_check.md # ブラウザでの動作確認記録
+|   |   |   `-- work_plan.md         # ローカルWebアプリMVPの作業計画
+|   |   `-- 20260812_02_update_evaluation_criteria
+|   |       |-- 20260812_1300-handover.md # 評価基準更新の引継ぎ記録
+|   |       `-- work_plan.md         # 評価基準更新の作業計画
 |   |-- research                     # 調査結果を格納
 |   |   `-- 20260811_x_rules_on_duplicate_posts.md # Xの複数アカウント運用と重複投稿の扱い
 |   |-- rules                        # 運用・編集ルール
