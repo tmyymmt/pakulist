@@ -1,0 +1,2 @@
+participantAlias,segment,sessionDate,taskReachedFirstValue,evidencePackagePrepared,taskMinutes,candidateUnderstanding,deterministicValue,semanticGapPresent,approvedDataPathPossible,graphDecisionUseCase,repeatUseIntent,pricingModelPreference,primaryBlocker,anonymizedNotes
+P-001,brand_protection,YYYY-MM-DD,true,true,0,true,high,false,unknown,unknown,high,unknown,unknown,
