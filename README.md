@@ -75,9 +75,12 @@ npm run bench:check
 |   |   |-- 20260812_05_x_api_input_adapter
 |   |   |   |-- 20260812_1345-handover.md # X API入力アダプターの引継ぎ記録
 |   |   |   `-- work_plan.md         # X API入力アダプターの作業計画
-|   |   `-- 20260812_06_detection_performance
-|   |       |-- 20260812_1400-handover.md # 検出性能改善の引継ぎ記録
-|   |       `-- work_plan.md         # 検出性能改善の作業計画
+|   |   |-- 20260812_06_detection_performance
+|   |   |   |-- 20260812_1400-handover.md # 検出性能改善の引継ぎ記録
+|   |   |   `-- work_plan.md         # 検出性能改善の作業計画
+|   |   `-- 20260812_07_browser_e2e
+|   |       |-- 20260812_1415-handover.md # ブラウザE2Eの引継ぎ記録
+|   |       `-- work_plan.md         # ブラウザE2Eの作業計画
 |   |-- research                     # 調査結果を格納
 |   |   |-- 20260811_x_rules_on_duplicate_posts.md # Xの複数アカウント運用と重複投稿の扱い
 |   |   `-- 20260812_x_data_acquisition_options.md # X投稿データの正規取得・利用経路の調査
@@ -101,7 +104,8 @@ npm run bench:check
 |       |-- detail_design
 |       |   |-- detection_engine.md  # 入力検証・検出・CSV出力の詳細設計
 |       |   |-- x_api_input_adapter.md # 保存済みX API Search JSONの変換設計
-|       |   `-- performance_and_responsiveness.md # 検出性能と処理中応答性の設計
+|       |   |-- performance_and_responsiveness.md # 検出性能と処理中応答性の設計
+|       |   `-- browser_e2e_testing.md # ブラウザE2Eのテスト設計
 |       |-- marketing                # マーケティング（未着手）
 |       |-- pricing
 |       |   `-- monetization_policy.md # マネタイズ方針・有料機能の境界

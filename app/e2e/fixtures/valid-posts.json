@@ -1,0 +1,18 @@
+{
+  "posts": [
+    {
+      "id": "e2e-1",
+      "account": "alpha",
+      "url": "https://x.com/alpha/status/1",
+      "postedAt": "2026-08-12T00:00:00Z",
+      "text": "<img src=x onerror=alert(1)> E2E確認用の同一投稿"
+    },
+    {
+      "id": "e2e-2",
+      "account": "beta",
+      "url": "https://x.com/beta/status/2",
+      "postedAt": "2026-08-12T00:01:00Z",
+      "text": "<img src=x onerror=alert(1)> E2E確認用の同一投稿"
+    }
+  ]
+}
