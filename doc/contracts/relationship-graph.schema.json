@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pakulist.example/contracts/relationship-graph.schema.json",
+  "title": "Relationship graph response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "caseId", "generatedAt", "filters", "nodes", "edges", "page"],
+  "properties": {
+    "schemaVersion": { "const": "1.0" },
+    "caseId": { "type": "string", "minLength": 1 },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "filters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["edgeTypes", "minEvidenceCount", "from", "to"],
+      "properties": {
+        "edgeTypes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["duplicate_text", "approximate_text", "later_copy_candidate"] }
+        },
+        "minEvidenceCount": { "type": "integer", "minimum": 1 },
+        "from": { "type": "string", "format": "date-time" },
+        "to": { "type": "string", "format": "date-time" }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["accountId", "handle", "observedPostCount"],
+        "properties": {
+          "accountId": { "type": "string", "minLength": 1 },
+          "handle": { "type": "string", "minLength": 1 },
+          "observedPostCount": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["edgeId", "sourceAccountId", "targetAccountId", "edgeType", "weight", "evidenceCount", "firstObservedAt", "lastObservedAt"],
+        "properties": {
+          "edgeId": { "type": "string", "minLength": 1 },
+          "sourceAccountId": { "type": "string", "minLength": 1 },
+          "targetAccountId": { "type": "string", "minLength": 1 },
+          "edgeType": { "enum": ["duplicate_text", "approximate_text", "later_copy_candidate"] },
+          "weight": { "type": "number", "minimum": 0 },
+          "evidenceCount": { "type": "integer", "minimum": 1 },
+          "firstObservedAt": { "type": "string", "format": "date-time" },
+          "lastObservedAt": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nextCursor"],
+      "properties": {
+        "nextCursor": { "type": ["string", "null"] }
+      }
+    }
+  }
+}
