@@ -52,7 +52,7 @@
 | SR-C04 | 検出・通報のための複数アカウント運用など、規約違反となる回避手段を用いない |
 | SR-C05 | 取得データの保持範囲・保持期間を定め、規約上許容される範囲に限定する |
 
-前提となる規約の調査結果は `doc/research/20260811_x_rules_on_duplicate_posts.md` を参照。
+前提となる規約の調査結果は `doc/research/20260811_x_rules_on_duplicate_posts.md` を参照。異なる複数アカウントの投稿を取得・利用する後続フェーズでは、`doc/specs/system_requirements/x_data_acquisition_policy.md` を正とする。現行MVPは外部取得を行わず、利用者が正規に取得済みのローカルファイルだけを扱う。
 
 ## 5. 未確定事項（TBD）
 

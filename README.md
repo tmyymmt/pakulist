@@ -53,11 +53,15 @@ npm test
 |   |   |   |-- 20260812_0000-handover.md # 作業状況・引継ぎ
 |   |   |   |-- 20260812_browser_check.md # ブラウザでの動作確認記録
 |   |   |   `-- work_plan.md         # ローカルWebアプリMVPの作業計画
-|   |   `-- 20260812_02_update_evaluation_criteria
-|   |       |-- 20260812_1300-handover.md # 評価基準更新の引継ぎ記録
-|   |       `-- work_plan.md         # 評価基準更新の作業計画
+|   |   |-- 20260812_02_update_evaluation_criteria
+|   |   |   |-- 20260812_1300-handover.md # 評価基準更新の引継ぎ記録
+|   |   |   `-- work_plan.md         # 評価基準更新の作業計画
+|   |   `-- 20260812_03_x_data_acquisition_decision
+|   |       |-- 20260812_1315-handover.md # Xデータ取得方針の引継ぎ記録
+|   |       `-- work_plan.md         # Xデータ取得方針の作業計画
 |   |-- research                     # 調査結果を格納
-|   |   `-- 20260811_x_rules_on_duplicate_posts.md # Xの複数アカウント運用と重複投稿の扱い
+|   |   |-- 20260811_x_rules_on_duplicate_posts.md # Xの複数アカウント運用と重複投稿の扱い
+|   |   `-- 20260812_x_data_acquisition_options.md # X投稿データの正規取得・利用経路の調査
 |   |-- rules                        # 運用・編集ルール
 |   |   `-- rules_for_ai_and_human.md # AI・人間共通の作業/編集ルール
 |   `-- specs                        # 仕様書を種別ごとに格納
@@ -66,7 +70,8 @@ npm test
 |       |-- business_requirements
 |       |   `-- goal_and_usecases.md # ゴール・目的・ユースケース
 |       |-- system_requirements
-|       |   `-- system_requirements.md # 対象SNS・OSS/有料の切り分け・検出要件・規約遵守要件
+|       |   |-- system_requirements.md # 対象SNS・OSS/有料の切り分け・検出要件・規約遵守要件
+|       |   `-- x_data_acquisition_policy.md # X投稿データの正規取得・利用ポリシー
 |       |-- system_spec
 |       |   `-- spec.md              # ローカルWebアプリMVPのシステム仕様
 |       |-- overview_design
