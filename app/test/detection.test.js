@@ -193,6 +193,18 @@ test('閾値以上の異なるアカウント投稿を近似一致としてク�
   assert.equal(clusters[0].similarity, 0.67);
 });
 
+test('接頭辞フィルタでも閾値以上の近似一致を検出する', () => {
+  const sharedTerms = Array.from({ length: 10 }, (_, index) => `topic${index}`).join(' ');
+  const clusters = findDuplicateClusters([
+    post({ id: 'a1', account: 'alpha', text: `${sharedTerms} alpha_only` }),
+    post({ id: 'b1', account: 'beta', url: 'https://x.com/beta/status/1', text: `${sharedTerms} beta_only` }),
+  ], { threshold: 0.8 });
+
+  assert.equal(clusters.length, 1);
+  assert.equal(clusters[0].matchType, 'approximate');
+  assert.equal(clusters[0].similarity, 0.83);
+});
+
 test('閾値未満の投稿は近似一致に含めない', () => {
   const clusters = findDuplicateClusters([
     post({ id: 'a1', account: 'alpha', text: '市場 ニュース 速報' }),
