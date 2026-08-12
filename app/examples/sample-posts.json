@@ -1,0 +1,51 @@
+[
+  {
+    "id": "demo-001",
+    "account": "news_alpha",
+    "url": "https://x.com/news_alpha/status/1001",
+    "postedAt": "2026-08-10T09:00:00+09:00",
+    "text": "本日、新サービスを公開しました。詳しくはこちら https://example.test/alpha"
+  },
+  {
+    "id": "demo-002",
+    "account": "news_beta",
+    "url": "https://x.com/news_beta/status/1002",
+    "postedAt": "2026-08-10T09:05:00+09:00",
+    "text": "本日、新サービスを公開しました。詳しくはこちら https://example.test/beta"
+  },
+  {
+    "id": "demo-003",
+    "account": "market_alpha",
+    "url": "https://x.com/market_alpha/status/1003",
+    "postedAt": "2026-08-11T08:00:00+09:00",
+    "text": "市場 ニュース 速報"
+  },
+  {
+    "id": "demo-004",
+    "account": "market_beta",
+    "url": "https://x.com/market_beta/status/1004",
+    "postedAt": "2026-08-11T08:10:00+09:00",
+    "text": "市場 ニュース 更新"
+  },
+  {
+    "id": "demo-005",
+    "account": "solo_account",
+    "url": "https://x.com/solo_account/status/1005",
+    "postedAt": "2026-08-11T09:00:00+09:00",
+    "text": "これは単独の投稿です。"
+  },
+  {
+    "id": "demo-006",
+    "account": "news_alpha",
+    "url": "https://x.com/news_alpha/status/1006",
+    "postedAt": "2026-08-11T10:00:00+09:00",
+    "text": "これは同一アカウント内だけの重複です。"
+  },
+  {
+    "id": "demo-007",
+    "account": "news_alpha",
+    "url": "https://x.com/news_alpha/status/1007",
+    "postedAt": "2026-08-11T10:01:00+09:00",
+    "text": "これは同一アカウント内だけの重複です。"
+  }
+]
