@@ -5,6 +5,7 @@ export const DEFAULT_OPTIONS = Object.freeze({
   threshold: 0.8,
   ignoreUrls: true,
   ignoreMentions: true,
+  originAccount: '',
 });
 
 export class InputValidationError extends Error {
@@ -334,7 +335,15 @@ function validateOptions(options) {
   if (!Number.isFinite(settings.threshold) || settings.threshold < 0.5 || settings.threshold > 1) {
     throw new RangeError('近似一致の閾値は0.50から1.00の範囲にしてください。');
   }
-  return settings;
+  if (typeof settings.originAccount !== 'string') {
+    throw new TypeError('起点アカウントは文字列にしてください。');
+  }
+
+  const originAccount = settings.originAccount.trim().replace(/^@+/, '');
+  if (originAccount.length > 30) {
+    throw new RangeError('起点アカウントは30文字以内にしてください。');
+  }
+  return { ...settings, originAccount };
 }
 
 function jaccardTokenSets(left, right) {
@@ -423,6 +432,54 @@ function clusterApproximate(posts, settings) {
     });
 }
 
+function selectCopyCandidateClusters(clusters, settings) {
+  if (settings.originAccount === '') return clusters;
+
+  const originAccount = settings.originAccount.toLocaleLowerCase('en-US');
+  return clusters.flatMap((cluster) => {
+    const originPosts = cluster.posts.filter((post) => post.account.toLocaleLowerCase('en-US') === originAccount);
+    if (originPosts.length === 0) return [];
+
+    const originPost = sortPosts(originPosts)[0];
+    const originTime = Date.parse(originPost.postedAt);
+    const candidates = cluster.posts
+      .filter((post) => post.account.toLocaleLowerCase('en-US') !== originAccount)
+      .filter((post) => Date.parse(post.postedAt) > originTime)
+      .map((post) => ({
+        post,
+        similarity: cluster.matchType === 'exact'
+          ? 1
+          : jaccardSimilarity(originPost.normalizedText, post.normalizedText),
+      }))
+      .filter(({ similarity }) => similarity >= settings.threshold);
+
+    if (candidates.length === 0) return [];
+
+    const evidencePosts = sortPosts([
+      { ...originPost, copyRole: 'origin', delaySeconds: 0, originPostId: originPost.id },
+      ...candidates.map(({ post, similarity }) => ({
+        ...post,
+        copyRole: 'candidate',
+        delaySeconds: Math.round((Date.parse(post.postedAt) - originTime) / 1000),
+        copySimilarity: similarity,
+        originPostId: originPost.id,
+      })),
+    ]);
+
+    return [{
+      ...cluster,
+      similarity: Number(Math.max(...candidates.map(({ similarity }) => similarity)).toFixed(2)),
+      posts: evidencePosts,
+      accountCount: uniqueAccountCount(evidencePosts),
+      postCount: evidencePosts.length,
+      originAccount: originPost.account,
+      originPostId: originPost.id,
+      originPostedAt: originPost.postedAt,
+      copyCandidateCount: candidates.length,
+    }];
+  });
+}
+
 export function findDuplicateClusters(posts, options = DEFAULT_OPTIONS) {
   const settings = validateOptions(options);
   const validatedPosts = validatePosts(posts);
@@ -452,7 +509,7 @@ export function findDuplicateClusters(posts, options = DEFAULT_OPTIONS) {
     ? clusterApproximate(preparedPosts.filter((post) => !exactIds.has(post.id) && post.normalizedText !== ''), settings)
     : [];
 
-  const clusters = [...exactClusters, ...approximateClusters].sort((left, right) => (
+  const clusters = selectCopyCandidateClusters([...exactClusters, ...approximateClusters], settings).sort((left, right) => (
     (left.matchType === 'exact' ? 0 : 1) - (right.matchType === 'exact' ? 0 : 1)
     || right.similarity - left.similarity
     || right.accountCount - left.accountCount
@@ -472,7 +529,7 @@ function csvSafe(value) {
 }
 
 export function clustersToCsv(clusters) {
-  const headers = ['clusterId', 'matchType', 'similarity', 'accountCount', 'postCount', 'account', 'url', 'postedAt', 'text'];
+  const headers = ['clusterId', 'matchType', 'similarity', 'accountCount', 'postCount', 'originAccount', 'originPostId', 'copyRole', 'delaySeconds', 'account', 'url', 'postedAt', 'text'];
   const rows = [headers.map(csvSafe).join(',')];
 
   for (const cluster of clusters) {
@@ -483,6 +540,10 @@ export function clustersToCsv(clusters) {
         cluster.similarity.toFixed(2),
         cluster.accountCount,
         cluster.postCount,
+        cluster.originAccount || '',
+        cluster.originPostId || '',
+        post.copyRole || '',
+        Number.isFinite(post.delaySeconds) ? post.delaySeconds : '',
         post.account,
         post.url,
         post.postedAt,

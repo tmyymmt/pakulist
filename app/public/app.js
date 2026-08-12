@@ -17,6 +17,7 @@ const elements = {
   fileStatus: document.querySelector('#file-status'),
   ignoreMentions: document.querySelector('#ignore-mentions'),
   ignoreUrls: document.querySelector('#ignore-urls'),
+  originAccount: document.querySelector('#origin-account'),
   resultsArea: document.querySelector('#results-area'),
   resultsSummary: document.querySelector('#results-summary'),
   threshold: document.querySelector('#threshold'),
@@ -61,6 +62,7 @@ function currentOptions() {
     threshold: Number(elements.threshold.value),
     ignoreUrls: elements.ignoreUrls.checked,
     ignoreMentions: elements.ignoreMentions.checked,
+    originAccount: elements.originAccount.value,
   };
 }
 
@@ -78,6 +80,13 @@ function formatDate(value) {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(value));
+}
+
+function formatDelay(seconds) {
+  if (seconds < 60) return `${seconds}秒後`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}分後`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}時間後`;
+  return `${Math.floor(seconds / 86400)}日後`;
 }
 
 function matchLabel(matchType) {
@@ -105,7 +114,16 @@ function renderPost(post) {
   links.className = 'post-links';
   links.append(createExternalLink(post.url, '投稿を別タブで開く'));
 
-  item.append(meta, text, links);
+  if (post.copyRole) {
+    const role = document.createElement('p');
+    role.className = `copy-role ${post.copyRole}`;
+    role.textContent = post.copyRole === 'origin'
+      ? '起点投稿'
+      : `後発コピー候補（${formatDelay(post.delaySeconds)}）`;
+    item.append(meta, text, links, role);
+  } else {
+    item.append(meta, text, links);
+  }
   return item;
 }
 
@@ -128,6 +146,7 @@ function renderCluster(cluster) {
     ['最大類似度', cluster.similarity.toFixed(2)],
     ['アカウント', `${cluster.accountCount}件`],
     ['投稿', `${cluster.postCount}件`],
+    ...(cluster.copyCandidateCount ? [['後発候補', `${cluster.copyCandidateCount}件`]] : []),
   ];
   metricData.forEach(([label, value]) => {
     const group = document.createElement('div');
@@ -165,7 +184,10 @@ function renderClusters() {
   elements.resultsArea.className = 'cluster-list';
   clusters.forEach((cluster) => elements.resultsArea.append(renderCluster(cluster)));
   const evidencePosts = clusters.reduce((total, cluster) => total + cluster.postCount, 0);
-  elements.resultsSummary.textContent = `${posts.length.toLocaleString('ja-JP')}件を解析し、${clusters.length.toLocaleString('ja-JP')}件の検出クラスタ（証拠投稿 ${evidencePosts.toLocaleString('ja-JP')}件）を表示しています。`;
+  const candidatePosts = clusters.reduce((total, cluster) => total + (cluster.copyCandidateCount || 0), 0);
+  elements.resultsSummary.textContent = candidatePosts > 0
+    ? `${posts.length.toLocaleString('ja-JP')}件を解析し、${clusters.length.toLocaleString('ja-JP')}件のコピー候補クラスタ（後発候補 ${candidatePosts.toLocaleString('ja-JP')}件、証拠投稿 ${evidencePosts.toLocaleString('ja-JP')}件）を表示しています。`
+    : `${posts.length.toLocaleString('ja-JP')}件を解析し、${clusters.length.toLocaleString('ja-JP')}件の検出クラスタ（証拠投稿 ${evidencePosts.toLocaleString('ja-JP')}件）を表示しています。`;
   elements.downloadButton.disabled = false;
 }
 
@@ -209,6 +231,7 @@ function setAnalysisPending(isPending) {
   elements.approximate.disabled = isPending;
   elements.ignoreUrls.disabled = isPending;
   elements.ignoreMentions.disabled = isPending;
+  elements.originAccount.disabled = isPending;
   elements.threshold.disabled = isPending || !elements.approximate.checked;
   elements.analyzeButton.disabled = isPending || !posts;
 }
@@ -267,7 +290,7 @@ elements.threshold.addEventListener('input', () => {
   updateThreshold();
   resetResultsOnSettingChange();
 });
-[elements.approximate, elements.ignoreUrls, elements.ignoreMentions].forEach((element) => {
+[elements.approximate, elements.ignoreUrls, elements.ignoreMentions, elements.originAccount].forEach((element) => {
   element.addEventListener('change', () => {
     updateThreshold();
     resetResultsOnSettingChange();

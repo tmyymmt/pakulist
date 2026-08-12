@@ -95,6 +95,37 @@ test('同一アカウントだけの重複は候補にしない', async ({ page 
   await expect(page.locator('#results-summary')).toContainText('検出クラスタは0件');
 });
 
+test('起点アカウント指定では後発のコピー候補だけを表示・CSV出力する', async ({ page }) => {
+  await page.goto('/');
+  await uploadJson(page, {
+    posts: [
+      standardPost({ id: 'origin', account: 'alpha', postedAt: '2026-08-12T00:00:00Z', text: 'コピー候補のE2E確認' }),
+      standardPost({ id: 'later', account: 'beta', url: 'https://x.com/beta/status/1', postedAt: '2026-08-12T01:30:00Z', text: 'コピー候補のE2E確認' }),
+      standardPost({ id: 'earlier', account: 'gamma', url: 'https://x.com/gamma/status/1', postedAt: '2026-08-11T23:00:00Z', text: 'コピー候補のE2E確認' }),
+      standardPost({ id: 'same-time', account: 'delta', url: 'https://x.com/delta/status/1', postedAt: '2026-08-12T00:00:00Z', text: 'コピー候補のE2E確認' }),
+    ],
+  });
+  await page.locator('#origin-account').fill('@alpha');
+  await page.locator('#analyze-button').click();
+
+  await expect(page.locator('#results-summary')).toContainText('コピー候補クラスタ');
+  await expect(page.locator('.copy-role.origin')).toContainText('起点投稿');
+  await expect(page.locator('.copy-role.candidate')).toContainText('後発コピー候補（1時間後）');
+  await expect(page.locator('.evidence-post')).toHaveCount(2);
+  await expect(page.locator('.evidence-list')).not.toContainText('@gamma');
+  await expect(page.locator('.evidence-list')).not.toContainText('@delta');
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.locator('#download-button').click();
+  const download = await downloadPromise;
+  const stream = await download.createReadStream();
+  let csv = '';
+  for await (const chunk of stream) csv += chunk;
+  expect(csv).toContain('originAccount');
+  expect(csv).toContain('candidate');
+  expect(csv).toContain('5400');
+});
+
 test.describe('入力エラー', () => {
   test('不正な拡張子と壊れたJSONを理由付きで拒否する', async ({ page }) => {
     await page.goto('/');

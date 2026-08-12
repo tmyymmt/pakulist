@@ -213,6 +213,54 @@ test('閾値未満の投稿は近似一致に含めない', () => {
   assert.equal(clusters.length, 0);
 });
 
+test('起点アカウントの最初の投稿より後の完全一致だけをコピー候補にする', () => {
+  const clusters = findDuplicateClusters([
+    post({ id: 'origin', account: 'alpha', postedAt: '2026-08-12T00:00:00Z', text: 'コピー候補の確認' }),
+    post({ id: 'later', account: 'beta', url: 'https://x.com/beta/status/1', postedAt: '2026-08-12T01:30:00Z', text: 'コピー候補の確認' }),
+    post({ id: 'earlier', account: 'gamma', url: 'https://x.com/gamma/status/1', postedAt: '2026-08-11T23:00:00Z', text: 'コピー候補の確認' }),
+    post({ id: 'same-time', account: 'delta', url: 'https://x.com/delta/status/1', postedAt: '2026-08-12T00:00:00Z', text: 'コピー候補の確認' }),
+  ], { approximate: false, originAccount: '@alpha' });
+
+  assert.equal(clusters.length, 1);
+  assert.equal(clusters[0].originAccount, 'alpha');
+  assert.equal(clusters[0].originPostId, 'origin');
+  assert.equal(clusters[0].copyCandidateCount, 1);
+  assert.deepEqual(clusters[0].posts.map(({ id, copyRole, delaySeconds }) => ({ id, copyRole, delaySeconds })), [
+    { id: 'origin', copyRole: 'origin', delaySeconds: 0 },
+    { id: 'later', copyRole: 'candidate', delaySeconds: 5400 },
+  ]);
+
+  const csv = clustersToCsv(clusters);
+  assert.match(csv, /"originAccount"/u);
+  assert.match(csv, /"candidate"/u);
+  assert.match(csv, /"5400"/u);
+});
+
+test('起点アカウント指定でも後発の近似一致候補を検出する', () => {
+  const clusters = findDuplicateClusters([
+    post({ id: 'origin', account: 'alpha', postedAt: '2026-08-12T00:00:00Z', text: '市場 ニュース 速報' }),
+    post({ id: 'later', account: 'beta', url: 'https://x.com/beta/status/1', postedAt: '2026-08-12T00:10:00Z', text: '市場 ニュース 更新' }),
+  ], { threshold: 0.65, originAccount: 'alpha' });
+
+  assert.equal(clusters.length, 1);
+  assert.equal(clusters[0].matchType, 'approximate');
+  assert.equal(clusters[0].copyCandidateCount, 1);
+  assert.equal(clusters[0].posts[1].copyRole, 'candidate');
+});
+
+test('起点アカウントがクラスタにない場合と不正な起点設定は候補を作らない', () => {
+  const clusters = findDuplicateClusters([
+    post({ id: 'a1', account: 'alpha', text: '同じ投稿' }),
+    post({ id: 'b1', account: 'beta', url: 'https://x.com/beta/status/1', text: '同じ投稿' }),
+  ], { originAccount: 'missing' });
+
+  assert.equal(clusters.length, 0);
+  assert.throws(
+    () => findDuplicateClusters([post()], { originAccount: 1 }),
+    /起点アカウント/u,
+  );
+});
+
 test('出力CSVは引用符をエスケープし、数式形式の値を無害化する', () => {
   const clusters = findDuplicateClusters([
     post({ id: 'a1', account: '=alpha', text: '"重要",お知らせ' }),
