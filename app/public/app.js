@@ -267,6 +267,15 @@ function renderClusters() {
   elements.evidenceButton.disabled = false;
 }
 
+async function readUtf8File(file) {
+  try {
+    const bytes = await file.arrayBuffer();
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    throw new InputValidationError(['入力ファイルはUTF-8として読めません。文字コードをUTF-8に変換してから選択してください。']);
+  }
+}
+
 async function loadFile() {
   const [file] = elements.fileInput.files;
   posts = null;
@@ -286,7 +295,7 @@ async function loadFile() {
   }
 
   try {
-    const content = await file.text();
+    const content = await readUtf8File(file);
     posts = parseInput(content, file.name);
     elements.fileStatus.textContent = `${file.name}（${posts.length.toLocaleString('ja-JP')}件）を読み込みました。データはブラウザ内でのみ処理されます。`;
     elements.resultsSummary.textContent = '設定を確認して「重複投稿を検出する」を選択してください。';

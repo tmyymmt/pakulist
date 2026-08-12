@@ -33,6 +33,7 @@ test('JSONを読み込み、候補を安全に表示し、CSVを保存できる'
   });
 
   await page.goto('/');
+  await expect(page.locator('#usage')).toContainText('単一アカウントのアーカイブだけでは候補を検出できない場合があります。');
   await page.locator('#post-file').setInputFiles(fixturePath('valid-posts.json'));
   await expect(page.locator('#file-status')).toContainText('valid-posts.json（2件）を読み込みました');
 
@@ -155,6 +156,13 @@ test.describe('入力エラー', () => {
       buffer: Buffer.from('{invalid'),
     });
     await expect(page.locator('#error-area')).toContainText('JSONの形式が正しくありません');
+
+    await page.locator('#post-file').setInputFiles({
+      name: 'broken-encoding.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from([0xff, 0xfe, 0xfd]),
+    });
+    await expect(page.locator('#error-area')).toContainText('UTF-8として読めません');
   });
 
   test('CSVヘッダ、URL・日時、重複ID、5,000件超過を拒否する', async ({ page }) => {

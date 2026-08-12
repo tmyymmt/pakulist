@@ -10,7 +10,7 @@
   "scripts": {
     "start": "node server.js",
     "test": "node --test",
-    "check": "node --check server.js && node --check src/detection.js && node --check src/evidence.js && node --check public/app.js",
+    "check": "node --check server.js && node --check src/detection.js && node --check src/evidence.js && node --check src/semantic-evaluation.js && node --check public/app.js",
     "bench": "node benchmarks/detection-performance.mjs",
     "bench:check": "node benchmarks/detection-performance.mjs --assert",
     "test:e2e": "playwright test",
