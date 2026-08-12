@@ -6,7 +6,7 @@ SNS（初期対応は X）上で同一または実質同一の投稿をしてい
 - AI による類似投稿判定はクローズドな有料サービスとして提供する
 - 現在のMVPは、正規に取得済みのCSV/JSON投稿データをブラウザ内だけで検出・出力するローカルWebアプリである
 
-仕様の入口は `doc/specs/system_spec/spec.md` を参照。
+仕様の入口は `doc/specs/full-specs.md` を参照。現行ローカルMVPの仕様は `doc/specs/system_spec/spec.md`、将来の有料AI意味的類似判定の評価・外部連携境界は `doc/specs/detail_design/semantic_similarity_evaluation.md` を参照。後者は設計と架空データによる評価基盤だけであり、現行アプリはAI APIを呼び出さない。
 
 ## ローカルWebアプリの実行
 
@@ -24,6 +24,7 @@ npm start
 ```bash
 cd app
 npm test
+npm run test:all
 ```
 
 性能ベンチマークと回帰チェックは以下で実行する。`bench:check`は、完全一致・近似一致それぞれ1,000件・5,000件の固定シナリオが性能基準を超えると失敗する。
@@ -39,6 +40,8 @@ npm run bench:check
 `app/examples/sample-posts.json` は標準形式の架空投稿データである。起動後にこのファイルを選択し、既定値で検出を実行すると、URL差を無視した完全一致クラスタが1件表示される。近似一致の例を確認する場合は、閾値を0.65以下に変更して再実行する。
 
 `app/examples/sample-x-api-search.json` は、資格情報を含まないX API v2 Search形式の架空レスポンスである。このファイルを選択しても同じ完全一致クラスタが1件表示され、ローカル変換を確認できる。このサンプルはAPIへ接続せず、実際のX API由来データを取得・利用する場合には `doc/specs/system_requirements/x_data_acquisition_policy.md` と `doc/specs/system_requirements/external_data_governance.md` の条件を満たす必要がある。
+
+`app/evaluation/semantic-similarity-cases.json` は、将来の有料AI機能を評価するための架空ラベル付きテキストである。アプリの入力ファイルではなく、外部AI APIを呼び出さない評価ユーティリティの回帰用データとして扱う。
 
 ## ドキュメント配置ルール
 

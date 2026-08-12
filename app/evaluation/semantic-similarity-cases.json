@@ -1,0 +1,62 @@
+{
+  "version": "2026-08-12",
+  "purpose": "架空テキストだけを用いた意味的類似判定の評価。外部SNS投稿や個人情報を含めない。",
+  "cases": [
+    {
+      "id": "positive-paraphrase-01",
+      "category": "言い換え",
+      "leftText": "明日の説明会は午後2時から始まります。",
+      "rightText": "説明会の開始時刻は明日14時です。",
+      "expectedLabel": "match"
+    },
+    {
+      "id": "positive-paraphrase-02",
+      "category": "語順変更",
+      "leftText": "新しい機能を今週金曜に公開します。",
+      "rightText": "今週の金曜日に新機能を公開予定です。",
+      "expectedLabel": "match"
+    },
+    {
+      "id": "positive-partial-01",
+      "category": "部分改変",
+      "leftText": "地域清掃は日曜の午前9時に中央公園へ集合してください。",
+      "rightText": "日曜日9時、中央公園に集合して地域清掃を行います。軍手を持参してください。",
+      "expectedLabel": "match"
+    },
+    {
+      "id": "positive-abbreviation-01",
+      "category": "略記",
+      "leftText": "オンライン配信のURLは開始30分前に案内します。",
+      "rightText": "配信リンクは開始の30分前に共有予定です。",
+      "expectedLabel": "match"
+    },
+    {
+      "id": "negative-topic-01",
+      "category": "同一語を含む無関係文",
+      "leftText": "説明会は午後2時から始まります。",
+      "rightText": "午後2時から図書館で映画を上映します。",
+      "expectedLabel": "non_match"
+    },
+    {
+      "id": "negative-template-01",
+      "category": "定型挨拶",
+      "leftText": "本日もよろしくお願いします。",
+      "rightText": "本日もよろしくお願いいたします。",
+      "expectedLabel": "non_match"
+    },
+    {
+      "id": "negative-entity-01",
+      "category": "主要事実の相違",
+      "leftText": "定例会は火曜日にオンラインで開催します。",
+      "rightText": "定例会は木曜日に会場で開催します。",
+      "expectedLabel": "non_match"
+    },
+    {
+      "id": "negative-opinion-01",
+      "category": "反対意見",
+      "leftText": "この方針は利用者の待ち時間を短くすると考えます。",
+      "rightText": "この方針では利用者の待ち時間は改善しないと考えます。",
+      "expectedLabel": "non_match"
+    }
+  ]
+}

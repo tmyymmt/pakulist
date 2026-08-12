@@ -23,6 +23,7 @@ SNS（初期対応は X）上で同一または実質同一の投稿をしてい
 | 詳細設計 | `doc/specs/detail_design/x_api_input_adapter.md` | 保存済みX API Search JSONを標準Post形式へ変換する入力アダプター |
 | 詳細設計 | `doc/specs/detail_design/performance_and_responsiveness.md` | 最大5,000件の近似一致解析における性能基準、候補絞り込み、処理中応答性 |
 | 詳細設計 | `doc/specs/detail_design/browser_e2e_testing.md` | ブラウザE2Eの画面操作、入力エラー、CSV出力、安全な外部リンク、CI実行 |
+| 詳細設計 | `doc/specs/detail_design/semantic_similarity_evaluation.md` | 有料AIによる意味的類似判定の評価セット、比較指標、OrcaRouter境界、原価、導入ゲート |
 | 価格設計 | `doc/specs/pricing/monetization_policy.md` | 二層構造、有料機能の境界、LLM利用前提 |
 | 横断 | `doc/specs/evaluation_criteria.md` | 審査基準への適合性 |
 
@@ -30,7 +31,8 @@ SNS（初期対応は X）上で同一または実質同一の投稿をしてい
 
 - `doc/research/20260811_x_rules_on_duplicate_posts.md` : X における複数アカウント運用と重複投稿の扱い
 - `doc/research/20260812_x_data_acquisition_options.md` : 他アカウント投稿を正規に取得・利用する経路と公式条件の調査
+- `doc/research/20260812_orcarouter_semantic_similarity_validation.md` : OrcaRouterを用いる意味的類似判定の公式仕様、料金構造、実装開始前ゲートの調査
 
 ## 未着手または将来の設計工程
 
-マーケティング（`marketing/`）と計測（`measurement/`）は未着手である。AIを用いた意味的類似判定、SNS API経由の取得、関係性可視化、認証・データ保持を伴うサービス化は、MVPの利用検証と規約・コスト・セキュリティ要件の確定後に設計する。
+マーケティング（`marketing/`）と計測（`measurement/`）は未着手である。AIを用いた意味的類似判定は、評価・連携境界を設計済みだが、実API連携、実モデル評価、認証・データ保持を伴うサービス化は、利用者提供の資格情報、データ権限、料金・予算、統合テストの確定後に実施する。SNS API経由の取得と関係性可視化も同様に後続フェーズで扱う。
