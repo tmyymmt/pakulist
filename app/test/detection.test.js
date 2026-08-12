@@ -28,6 +28,97 @@ test('JSON入力を検証し、アカウント先頭の@を除去する', () => 
   assert.equal(posts[0].account, 'alpha');
 });
 
+test('X API v2 Search JSONを標準Post形式に変換できる', () => {
+  const posts = parseInput(JSON.stringify({
+    data: [
+      {
+        id: '1001',
+        author_id: 'user-a',
+        created_at: '2026-08-12T00:00:00Z',
+        text: '同じ投稿です',
+      },
+      {
+        id: '1002',
+        author_id: 'user-b',
+        created_at: '2026-08-12T00:01:00Z',
+        text: '同じ投稿です',
+      },
+    ],
+    includes: {
+      users: [
+        { id: 'user-a', username: 'alpha' },
+        { id: 'user-b', username: '@beta' },
+      ],
+    },
+  }), 'x-api-search.json');
+
+  assert.deepEqual(posts, [
+    {
+      id: '1001',
+      account: 'alpha',
+      url: 'https://x.com/alpha/status/1001',
+      postedAt: '2026-08-12T00:00:00Z',
+      text: '同じ投稿です',
+    },
+    {
+      id: '1002',
+      account: 'beta',
+      url: 'https://x.com/beta/status/1002',
+      postedAt: '2026-08-12T00:01:00Z',
+      text: '同じ投稿です',
+    },
+  ]);
+});
+
+test('X API v2 Search JSONでauthor_idに対応するusernameがない場合はエラーにする', () => {
+  assert.throws(
+    () => parseInput(JSON.stringify({
+      data: [{
+        id: '1001',
+        author_id: 'unknown-user',
+        created_at: '2026-08-12T00:00:00Z',
+        text: '投稿本文',
+      }],
+      includes: { users: [] },
+    }), 'x-api-search.json'),
+    (error) => error instanceof InputValidationError
+      && error.errors.some((message) => message.includes('unknown-user')),
+  );
+});
+
+test('X API v2 Search JSONでincludes.usersがない場合はエラーにする', () => {
+  assert.throws(
+    () => parseInput(JSON.stringify({
+      data: [{
+        id: '1001',
+        author_id: 'user-a',
+        created_at: '2026-08-12T00:00:00Z',
+        text: '投稿本文',
+      }],
+    }), 'x-api-search.json'),
+    (error) => error instanceof InputValidationError
+      && error.errors.some((message) => message.includes('includes.users')),
+  );
+});
+
+test('X API v2 Search JSONでも5,000件を超える投稿は拒否する', () => {
+  const data = Array.from({ length: 5001 }, (_, index) => ({
+    id: String(index + 1),
+    author_id: 'user-a',
+    created_at: '2026-08-12T00:00:00Z',
+    text: `投稿 ${index + 1}`,
+  }));
+
+  assert.throws(
+    () => parseInput(JSON.stringify({
+      data,
+      includes: { users: [{ id: 'user-a', username: 'alpha' }] },
+    }), 'x-api-search.json'),
+    (error) => error instanceof InputValidationError
+      && error.errors.some((message) => message.includes('最大5,000件')),
+  );
+});
+
 test('引用符・改行を含むCSVを解析できる', () => {
   const csv = [
     'id,account,url,postedAt,text',

@@ -1,0 +1,28 @@
+{
+  "data": [
+    {
+      "id": "1900000000000000001",
+      "author_id": "10000001",
+      "created_at": "2026-08-12T00:00:00Z",
+      "text": "架空のX API Search入力サンプルです。"
+    },
+    {
+      "id": "1900000000000000002",
+      "author_id": "10000002",
+      "created_at": "2026-08-12T00:01:00Z",
+      "text": "架空のX API Search入力サンプルです。"
+    }
+  ],
+  "includes": {
+    "users": [
+      {
+        "id": "10000001",
+        "username": "sample_alpha"
+      },
+      {
+        "id": "10000002",
+        "username": "sample_beta"
+      }
+    ]
+  }
+}
