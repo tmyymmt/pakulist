@@ -4,7 +4,9 @@ import test from 'node:test';
 import {
   InputValidationError,
   clustersToCsv,
+  copyCandidatesToCsv,
   findDuplicateClusters,
+  findLaterCopyCandidates,
   jaccardSimilarity,
   normalizeText,
   parseInput,
@@ -211,6 +213,60 @@ test('閾値未満の投稿は近似一致に含めない', () => {
     post({ id: 'b1', account: 'beta', url: 'https://x.com/beta/status/1', text: '市場 ニュース 更新' }),
   ], { threshold: 0.7 });
   assert.equal(clusters.length, 0);
+});
+
+test('起点投稿から後発の異なるアカウント投稿だけをコピー候補として抽出する', () => {
+  const candidates = findLaterCopyCandidates([
+    post({ id: 'origin', account: 'alpha', postedAt: '2026-08-12T00:00:00Z', text: '市場 ニュース 速報' }),
+    post({ id: 'earlier', account: 'beta', url: 'https://x.com/beta/status/1', postedAt: '2026-08-11T23:59:59Z', text: '市場 ニュース 速報' }),
+    post({ id: 'same-time', account: 'gamma', url: 'https://x.com/gamma/status/1', postedAt: '2026-08-12T00:00:00Z', text: '市場 ニュース 速報' }),
+    post({ id: 'same-account', account: 'alpha', url: 'https://x.com/alpha/status/2', postedAt: '2026-08-12T00:01:00Z', text: '市場 ニュース 速報' }),
+    post({ id: 'exact-later', account: 'beta', url: 'https://x.com/beta/status/2', postedAt: '2026-08-12T00:01:00Z', text: '市場 ニュース 速報' }),
+    post({ id: 'approximate-later', account: 'gamma', url: 'https://x.com/gamma/status/2', postedAt: '2026-08-12T00:02:00Z', text: '市場 ニュース 更新' }),
+  ], { originPostId: 'origin' }, { threshold: 0.65 });
+
+  assert.deepEqual(candidates.map((item) => ({
+    id: item.candidate.id,
+    matchType: item.matchType,
+    seconds: Math.round(item.timeDifferenceMs / 1000),
+  })), [
+    { id: 'exact-later', matchType: 'exact', seconds: 60 },
+    { id: 'approximate-later', matchType: 'approximate', seconds: 120 },
+  ]);
+});
+
+test('起点アカウント指定を正規化し、起点指定エラーを知らせる', () => {
+  const posts = [
+    post({ id: 'origin', account: 'alpha', text: '同一の投稿' }),
+    post({ id: 'later', account: 'beta', url: 'https://x.com/beta/status/1', postedAt: '2026-08-12T00:01:00Z', text: '同一の投稿' }),
+  ];
+  const candidates = findLaterCopyCandidates(posts, { originAccount: '@alpha' });
+  assert.equal(candidates.length, 1);
+  assert.equal(candidates[0].candidate.id, 'later');
+
+  assert.throws(
+    () => findLaterCopyCandidates(posts, {}),
+    (error) => error instanceof TypeError && error.message.includes('どちらか一方'),
+  );
+  assert.throws(
+    () => findLaterCopyCandidates(posts, { originPostId: 'origin', originAccount: 'alpha' }),
+    (error) => error instanceof TypeError && error.message.includes('どちらか一方'),
+  );
+  assert.throws(
+    () => findLaterCopyCandidates(posts, { originPostId: 'missing' }),
+    (error) => error instanceof InputValidationError && error.errors.some((message) => message.includes('見つかりません')),
+  );
+});
+
+test('コピー候補CSVは起点、後発候補、時刻差を出力し、数式形式を無害化する', () => {
+  const candidates = findLaterCopyCandidates([
+    post({ id: 'origin', account: 'alpha', text: '同一の投稿' }),
+    post({ id: 'later', account: '=beta', url: 'https://x.com/beta/status/1', postedAt: '2026-08-12T00:01:00Z', text: '同一の投稿' }),
+  ], { originPostId: 'origin' });
+  const csv = copyCandidatesToCsv(candidates);
+  assert.match(csv, /"originId","originAccount","originUrl"/u);
+  assert.match(csv, /"60","exact","1\.00"/u);
+  assert.match(csv, /"'=beta"/u);
 });
 
 test('出力CSVは引用符をエスケープし、数式形式の値を無害化する', () => {
