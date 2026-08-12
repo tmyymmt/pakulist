@@ -87,6 +87,15 @@
             <input id="ignore-mentions" type="checkbox" checked />
             <span><strong>メンションを比較から除外する</strong><small>本文中の<code>@account</code>差だけを無視します。</small></span>
           </label>
+          <div class="origin-row">
+            <div>
+              <strong>UC-03: 起点を指定して後発候補だけを抽出する</strong>
+              <p>起点投稿IDまたは起点アカウントのどちらか一方を指定すると、その投稿より後にある異なるアカウントの一致候補だけを表示します。同時刻の投稿は前後関係を確定できないため除外します。</p>
+            </div>
+            <label for="origin-post-id">起点投稿ID<input id="origin-post-id" type="text" autocomplete="off" placeholder="例: 1234567890" /></label>
+            <p class="origin-or">または</p>
+            <label for="origin-account">起点アカウント<input id="origin-account" type="text" autocomplete="off" placeholder="例: @original_author" /></label>
+          </div>
         </div>
         <button id="analyze-button" class="primary-button" type="button" disabled>重複投稿を検出する</button>
       </section>

@@ -2,7 +2,9 @@ import {
   DEFAULT_OPTIONS,
   InputValidationError,
   clustersToCsv,
+  copyCandidatesToCsv,
   findDuplicateClusters,
+  findLaterCopyCandidates,
   parseInput,
 } from '/src/detection.js';
 
@@ -17,6 +19,8 @@ const elements = {
   fileStatus: document.querySelector('#file-status'),
   ignoreMentions: document.querySelector('#ignore-mentions'),
   ignoreUrls: document.querySelector('#ignore-urls'),
+  originAccount: document.querySelector('#origin-account'),
+  originPostId: document.querySelector('#origin-post-id'),
   resultsArea: document.querySelector('#results-area'),
   resultsSummary: document.querySelector('#results-summary'),
   threshold: document.querySelector('#threshold'),
@@ -25,6 +29,8 @@ const elements = {
 
 let posts = null;
 let clusters = [];
+let copyCandidates = [];
+let analysisMode = 'clusters';
 
 function clearChildren(element) {
   while (element.firstChild) element.removeChild(element.firstChild);
@@ -64,6 +70,12 @@ function currentOptions() {
   };
 }
 
+function currentOrigin() {
+  const originPostId = elements.originPostId.value.trim();
+  const originAccount = elements.originAccount.value.trim();
+  return originPostId === '' && originAccount === '' ? null : { originPostId, originAccount };
+}
+
 function createExternalLink(url, label) {
   const link = document.createElement('a');
   link.href = url;
@@ -82,6 +94,20 @@ function formatDate(value) {
 
 function matchLabel(matchType) {
   return matchType === 'exact' ? '完全一致' : '近似一致';
+}
+
+function formatTimeDifference(timeDifferenceMs) {
+  const totalSeconds = Math.round(timeDifferenceMs / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const segments = [];
+  if (days > 0) segments.push(`${days}日`);
+  if (hours > 0 || days > 0) segments.push(`${hours}時間`);
+  if (minutes > 0 || hours > 0 || days > 0) segments.push(`${minutes}分`);
+  segments.push(`${seconds}秒`);
+  return segments.join('');
 }
 
 function renderPost(post) {
@@ -153,6 +179,71 @@ function renderCluster(cluster) {
   return card;
 }
 
+function renderCopyCandidate(item, index) {
+  const card = document.createElement('article');
+  card.className = 'cluster-card copy-candidate-card';
+  const header = document.createElement('div');
+  header.className = 'cluster-header';
+
+  const title = document.createElement('h3');
+  title.textContent = `後発候補 ${String(index + 1).padStart(3, '0')}`;
+  const badge = document.createElement('span');
+  badge.className = `match-badge ${item.matchType}`;
+  badge.textContent = matchLabel(item.matchType);
+  header.append(title, badge);
+
+  const metrics = document.createElement('dl');
+  metrics.className = 'metrics';
+  [
+    ['類似度', item.similarity.toFixed(2)],
+    ['起点からの時刻差', formatTimeDifference(item.timeDifferenceMs)],
+    ['候補アカウント', `@${item.candidate.account}`],
+  ].forEach(([label, value]) => {
+    const group = document.createElement('div');
+    const term = document.createElement('dt');
+    term.textContent = label;
+    const description = document.createElement('dd');
+    description.textContent = value;
+    group.append(term, description);
+    metrics.append(group);
+  });
+
+  const originTitle = document.createElement('h4');
+  originTitle.textContent = '起点投稿';
+  const originEvidence = document.createElement('div');
+  originEvidence.className = 'evidence-list';
+  originEvidence.append(renderPost(item.origin));
+
+  const candidateTitle = document.createElement('h4');
+  candidateTitle.textContent = '後発候補';
+  const candidateEvidence = document.createElement('div');
+  candidateEvidence.className = 'evidence-list';
+  candidateEvidence.append(renderPost(item.candidate));
+
+  const caution = document.createElement('p');
+  caution.className = 'cluster-caution';
+  caution.append('時刻順と本文の類似に基づく候補です。権利侵害等の法的結論ではありません。通報の要否は利用者が確認・判断してください。 ', createExternalLink(REPORT_HELP_URL, 'Xの通報ヘルプを開く'));
+
+  card.append(header, metrics, originTitle, originEvidence, candidateTitle, candidateEvidence, caution);
+  return card;
+}
+
+function renderCopyCandidates() {
+  clearChildren(elements.resultsArea);
+  if (copyCandidates.length === 0) {
+    setEmptyState('指定した起点投稿・アカウントより後に投稿された一致候補は検出されませんでした。起点と設定を確認してください。');
+    elements.resultsSummary.textContent = `${posts.length.toLocaleString('ja-JP')}件を解析し、後発コピー候補は0件でした。`;
+    elements.downloadButton.disabled = true;
+    return;
+  }
+
+  elements.resultsArea.className = 'cluster-list';
+  copyCandidates.forEach((item, index) => elements.resultsArea.append(renderCopyCandidate(item, index)));
+  const originCount = new Set(copyCandidates.map((item) => item.origin.id)).size;
+  elements.resultsSummary.textContent = `${posts.length.toLocaleString('ja-JP')}件を解析し、${originCount.toLocaleString('ja-JP')}件の起点から後発コピー候補 ${copyCandidates.length.toLocaleString('ja-JP')}件を表示しています。`;
+  elements.downloadButton.disabled = false;
+}
+
 function renderClusters() {
   clearChildren(elements.resultsArea);
   if (clusters.length === 0) {
@@ -173,6 +264,8 @@ async function loadFile() {
   const [file] = elements.fileInput.files;
   posts = null;
   clusters = [];
+  copyCandidates = [];
+  analysisMode = 'clusters';
   elements.analyzeButton.disabled = true;
   elements.downloadButton.disabled = true;
   hideError();
@@ -209,6 +302,8 @@ function setAnalysisPending(isPending) {
   elements.approximate.disabled = isPending;
   elements.ignoreUrls.disabled = isPending;
   elements.ignoreMentions.disabled = isPending;
+  elements.originAccount.disabled = isPending;
+  elements.originPostId.disabled = isPending;
   elements.threshold.disabled = isPending || !elements.approximate.checked;
   elements.analyzeButton.disabled = isPending || !posts;
 }
@@ -217,6 +312,9 @@ async function analyze() {
   if (!posts) return;
   hideError();
   clusters = [];
+  copyCandidates = [];
+  const origin = currentOrigin();
+  analysisMode = origin ? 'copyCandidates' : 'clusters';
   setAnalysisPending(true);
   const count = posts.length.toLocaleString('ja-JP');
   elements.resultsSummary.textContent = `${count}件を解析しています。近似一致は投稿数に応じて時間がかかることがあります。`;
@@ -224,10 +322,19 @@ async function analyze() {
 
   try {
     await nextPaint();
-    clusters = findDuplicateClusters(posts, currentOptions());
-    renderClusters();
+    if (origin) {
+      copyCandidates = findLaterCopyCandidates(posts, origin, currentOptions());
+      renderCopyCandidates();
+    } else {
+      clusters = findDuplicateClusters(posts, currentOptions());
+      renderClusters();
+    }
   } catch (error) {
-    const errors = error instanceof InputValidationError ? error.errors : ['検出中に問題が起きました。設定と入力ファイルを確認してください。'];
+    const errors = error instanceof InputValidationError
+      ? error.errors
+      : error instanceof TypeError
+        ? [error.message]
+        : ['検出中に問題が起きました。設定と入力ファイルを確認してください。'];
     showError(errors);
   } finally {
     setAnalysisPending(false);
@@ -235,12 +342,17 @@ async function analyze() {
 }
 
 function downloadCsv() {
-  if (clusters.length === 0) return;
-  const blob = new Blob([clustersToCsv(clusters)], { type: 'text/csv;charset=utf-8' });
+  if (analysisMode === 'copyCandidates' ? copyCandidates.length === 0 : clusters.length === 0) return;
+  const content = analysisMode === 'copyCandidates'
+    ? copyCandidatesToCsv(copyCandidates)
+    : clustersToCsv(clusters);
+  const blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
   const objectUrl = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = objectUrl;
-  link.download = 'pakulist-results.csv';
+  link.download = analysisMode === 'copyCandidates'
+    ? 'pakulist-copy-candidates.csv'
+    : 'pakulist-results.csv';
   document.body.append(link);
   link.click();
   link.remove();
@@ -255,6 +367,8 @@ function updateThreshold() {
 function resetResultsOnSettingChange() {
   if (!posts) return;
   clusters = [];
+  copyCandidates = [];
+  analysisMode = 'clusters';
   elements.downloadButton.disabled = true;
   elements.resultsSummary.textContent = '設定が変わりました。再度「重複投稿を検出する」を選択してください。';
   setEmptyState('設定を変更しました。検出を再実行してください。');
@@ -272,6 +386,9 @@ elements.threshold.addEventListener('input', () => {
     updateThreshold();
     resetResultsOnSettingChange();
   });
+});
+[elements.originPostId, elements.originAccount].forEach((element) => {
+  element.addEventListener('input', resetResultsOnSettingChange);
 });
 
 Object.assign(elements.approximate, { checked: DEFAULT_OPTIONS.approximate });

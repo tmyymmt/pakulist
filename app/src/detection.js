@@ -423,6 +423,79 @@ function clusterApproximate(posts, settings) {
     });
 }
 
+function selectOriginPosts(posts, origin) {
+  const originPostId = typeof origin?.originPostId === 'string' ? origin.originPostId.trim() : '';
+  const originAccount = typeof origin?.originAccount === 'string'
+    ? origin.originAccount.trim().replace(/^@+/, '')
+    : '';
+
+  if ((originPostId === '' && originAccount === '') || (originPostId !== '' && originAccount !== '')) {
+    throw new TypeError('起点投稿IDまたは起点アカウントのどちらか一方を指定してください。');
+  }
+
+  if (originPostId !== '') {
+    const post = posts.find((item) => item.id === originPostId);
+    if (!post) throw createInputError(`起点投稿ID "${originPostId}" が入力データに見つかりません。`);
+    return [post];
+  }
+
+  const normalizedAccount = originAccount.toLocaleLowerCase('en-US');
+  const accountPosts = posts.filter((item) => item.account.toLocaleLowerCase('en-US') === normalizedAccount);
+  if (accountPosts.length === 0) throw createInputError(`起点アカウント "@${originAccount}" が入力データに見つかりません。`);
+  return accountPosts;
+}
+
+function matchOriginAndCandidate(origin, candidate, settings) {
+  if (origin.normalizedText === '' || candidate.normalizedText === '') return null;
+  if (origin.normalizedText === candidate.normalizedText) {
+    return { matchType: 'exact', similarity: 1 };
+  }
+  if (!settings.approximate) return null;
+
+  const similarity = jaccardSimilarity(origin.normalizedText, candidate.normalizedText);
+  return similarity >= settings.threshold
+    ? { matchType: 'approximate', similarity: Number(similarity.toFixed(2)) }
+    : null;
+}
+
+export function findLaterCopyCandidates(posts, origin, options = DEFAULT_OPTIONS) {
+  const settings = validateOptions(options);
+  const validatedPosts = validatePosts(posts);
+  const preparedPosts = validatedPosts.map((post) => ({
+    ...post,
+    normalizedText: normalizeText(post.text, settings),
+  }));
+  const origins = selectOriginPosts(preparedPosts, origin);
+  const candidates = [];
+
+  for (const originPost of origins) {
+    const originTime = Date.parse(originPost.postedAt);
+    const originAccount = originPost.account.toLocaleLowerCase('en-US');
+    for (const candidatePost of preparedPosts) {
+      if (candidatePost.id === originPost.id) continue;
+      if (candidatePost.account.toLocaleLowerCase('en-US') === originAccount) continue;
+      const timeDifferenceMs = Date.parse(candidatePost.postedAt) - originTime;
+      // 同時刻の投稿は前後関係を確定できないため、後発候補に含めない。
+      if (timeDifferenceMs <= 0) continue;
+
+      const match = matchOriginAndCandidate(originPost, candidatePost, settings);
+      if (!match) continue;
+      candidates.push({
+        origin: originPost,
+        candidate: candidatePost,
+        ...match,
+        timeDifferenceMs,
+      });
+    }
+  }
+
+  return candidates.sort((left, right) => (
+    Date.parse(left.candidate.postedAt) - Date.parse(right.candidate.postedAt)
+    || Date.parse(left.origin.postedAt) - Date.parse(right.origin.postedAt)
+    || left.candidate.id.localeCompare(right.candidate.id, 'ja')
+  ));
+}
+
 export function findDuplicateClusters(posts, options = DEFAULT_OPTIONS) {
   const settings = validateOptions(options);
   const validatedPosts = validatePosts(posts);
@@ -463,6 +536,42 @@ export function findDuplicateClusters(posts, options = DEFAULT_OPTIONS) {
     id: `C-${String(index + 1).padStart(3, '0')}`,
     ...cluster,
   }));
+}
+
+export function copyCandidatesToCsv(candidates) {
+  const headers = [
+    'originId',
+    'originAccount',
+    'originUrl',
+    'originPostedAt',
+    'candidateId',
+    'candidateAccount',
+    'candidateUrl',
+    'candidatePostedAt',
+    'timeDifferenceSeconds',
+    'matchType',
+    'similarity',
+    'candidateText',
+  ];
+  const rows = [headers.map(csvSafe).join(',')];
+
+  for (const item of candidates) {
+    rows.push([
+      item.origin.id,
+      item.origin.account,
+      item.origin.url,
+      item.origin.postedAt,
+      item.candidate.id,
+      item.candidate.account,
+      item.candidate.url,
+      item.candidate.postedAt,
+      Math.round(item.timeDifferenceMs / 1000),
+      item.matchType,
+      item.similarity.toFixed(2),
+      item.candidate.text,
+    ].map(csvSafe).join(','));
+  }
+  return `${rows.join('\r\n')}\r\n`;
 }
 
 function csvSafe(value) {

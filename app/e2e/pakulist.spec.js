@@ -83,6 +83,38 @@ test('CSVを読み込み、URL・メンション無視の設定変更を反映�
   await expect(page.locator('#results-summary')).toContainText('検出クラスタは0件');
 });
 
+test('起点投稿を指定して後発コピー候補と時刻差を表示・CSV出力できる', async ({ page }) => {
+  await page.goto('/');
+  await uploadJson(page, {
+    posts: [
+      standardPost({ id: 'origin', account: 'alpha', postedAt: '2026-08-12T00:00:00Z', text: '市場 ニュース 速報' }),
+      standardPost({ id: 'earlier', account: 'beta', url: 'https://x.com/beta/status/1', postedAt: '2026-08-11T23:59:00Z', text: '市場 ニュース 速報' }),
+      standardPost({ id: 'same-time', account: 'gamma', url: 'https://x.com/gamma/status/1', postedAt: '2026-08-12T00:00:00Z', text: '市場 ニュース 速報' }),
+      standardPost({ id: 'same-account', account: 'alpha', url: 'https://x.com/alpha/status/2', postedAt: '2026-08-12T00:01:00Z', text: '市場 ニュース 速報' }),
+      standardPost({ id: 'later', account: 'beta', url: 'https://x.com/beta/status/2', postedAt: '2026-08-12T00:02:00Z', text: '市場 ニュース 速報' }),
+    ],
+  });
+
+  await page.locator('#origin-post-id').fill('origin');
+  await page.locator('#analyze-button').click();
+  await expect(page.locator('#results-summary')).toContainText('後発コピー候補 1件');
+  await expect(page.locator('.copy-candidate-card')).toHaveCount(1);
+  await expect(page.locator('.copy-candidate-card')).toContainText('起点からの時刻差');
+  await expect(page.locator('.copy-candidate-card')).toContainText('2分0秒');
+  await expect(page.locator('.copy-candidate-card')).toContainText('権利侵害等の法的結論ではありません');
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.locator('#download-button').click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe('pakulist-copy-candidates.csv');
+  const stream = await download.createReadStream();
+  let csv = '';
+  for await (const chunk of stream) csv += chunk;
+  expect(csv).toContain('originId');
+  expect(csv).toContain('timeDifferenceSeconds');
+  expect(csv).toContain('"120"');
+});
+
 test('同一アカウントだけの重複は候補にしない', async ({ page }) => {
   await page.goto('/');
   await uploadJson(page, {
