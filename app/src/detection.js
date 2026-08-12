@@ -158,6 +158,65 @@ export function parseCsv(content) {
     });
 }
 
+export function parseXApiSearchResponse(payload) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw createInputError('X API JSON: ルートはオブジェクトである必要があります。');
+  }
+
+  if (!Array.isArray(payload.data)) {
+    throw createInputError('X API JSON: data は投稿オブジェクトの配列である必要があります。');
+  }
+
+  if (!Array.isArray(payload.includes?.users)) {
+    throw createInputError('X API JSON: includes.users は author_id と username を結合するための配列である必要があります。');
+  }
+
+  const usernameByUserId = new Map();
+  payload.includes.users.forEach((user) => {
+    if (!user || typeof user !== 'object' || Array.isArray(user)) return;
+    const id = typeof user.id === 'string' ? user.id.trim() : '';
+    const username = typeof user.username === 'string' ? user.username.trim().replace(/^@+/, '') : '';
+    if (requiredText(id) && requiredText(username)) usernameByUserId.set(id, username);
+  });
+
+  const errors = [];
+  const posts = [];
+  payload.data.forEach((raw, index) => {
+    const item = index + 1;
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+      errors.push(`X API data[${item}]: 投稿はオブジェクトである必要があります。`);
+      return;
+    }
+
+    const id = typeof raw.id === 'string' ? raw.id.trim() : '';
+    const authorId = typeof raw.author_id === 'string' ? raw.author_id.trim() : '';
+    const text = typeof raw.text === 'string' ? raw.text : '';
+    const postedAt = typeof raw.created_at === 'string' ? raw.created_at.trim() : '';
+    const account = usernameByUserId.get(authorId) || '';
+
+    if (!requiredText(id)) errors.push(`X API data[${item}]: id は空でない文字列にしてください。`);
+    if (!requiredText(authorId)) errors.push(`X API data[${item}]: author_id は空でない文字列にしてください。`);
+    if (requiredText(authorId) && !requiredText(account)) {
+      errors.push(`X API data[${item}]: author_id "${authorId}" に対応する includes.users の username が見つかりません。`);
+    }
+    if (!requiredText(postedAt)) errors.push(`X API data[${item}]: created_at は空でない文字列にしてください。`);
+    if (!requiredText(text)) errors.push(`X API data[${item}]: text は空白以外を含む文字列にしてください。`);
+
+    if (requiredText(id) && requiredText(account)) {
+      posts.push({
+        id,
+        account,
+        url: `https://x.com/${encodeURIComponent(account)}/status/${encodeURIComponent(id)}`,
+        postedAt,
+        text,
+      });
+    }
+  });
+
+  if (errors.length > 0) throw new InputValidationError(errors);
+  return posts;
+}
+
 export function parseInput(content, fileName) {
   const normalizedName = String(fileName || '').toLowerCase();
   let rawPosts;
@@ -165,8 +224,17 @@ export function parseInput(content, fileName) {
   if (normalizedName.endsWith('.json')) {
     try {
       const parsed = JSON.parse(content);
-      rawPosts = Array.isArray(parsed) ? parsed : parsed?.posts;
-    } catch {
+      if (Array.isArray(parsed)) {
+        rawPosts = parsed;
+      } else if (Array.isArray(parsed?.posts)) {
+        rawPosts = parsed.posts;
+      } else if (Object.hasOwn(parsed || {}, 'data')) {
+        rawPosts = parseXApiSearchResponse(parsed);
+      } else {
+        rawPosts = undefined;
+      }
+    } catch (error) {
+      if (error instanceof InputValidationError) throw error;
       throw createInputError('JSONの形式が正しくありません。');
     }
   } else if (normalizedName.endsWith('.csv')) {

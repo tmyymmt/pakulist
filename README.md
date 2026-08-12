@@ -28,7 +28,9 @@ npm test
 
 ### サンプルでの確認
 
-`app/examples/sample-posts.json` は架空の投稿データである。起動後にこのファイルを選択し、既定値で検出を実行すると、URL差を無視した完全一致クラスタが1件表示される。近似一致の例を確認する場合は、閾値を0.65以下に変更して再実行する。
+`app/examples/sample-posts.json` は標準形式の架空投稿データである。起動後にこのファイルを選択し、既定値で検出を実行すると、URL差を無視した完全一致クラスタが1件表示される。近似一致の例を確認する場合は、閾値を0.65以下に変更して再実行する。
+
+`app/examples/sample-x-api-search.json` は、資格情報を含まないX API v2 Search形式の架空レスポンスである。このファイルを選択しても同じ完全一致クラスタが1件表示され、ローカル変換を確認できる。このサンプルはAPIへ接続せず、実際のX API由来データを取得・利用する場合には `doc/specs/system_requirements/x_data_acquisition_policy.md` と `doc/specs/system_requirements/external_data_governance.md` の条件を満たす必要がある。
 
 ## ドキュメント配置ルール
 
@@ -59,9 +61,12 @@ npm test
 |   |   |-- 20260812_03_x_data_acquisition_decision
 |   |   |   |-- 20260812_1315-handover.md # Xデータ取得方針の引継ぎ記録
 |   |   |   `-- work_plan.md         # Xデータ取得方針の作業計画
-|   |   `-- 20260812_04_external_data_governance
-|   |       |-- 20260812_1330-handover.md # 外部データ管理方針の引継ぎ記録
-|   |       `-- work_plan.md         # 外部データ管理方針の作業計画
+|   |   |-- 20260812_04_external_data_governance
+|   |   |   |-- 20260812_1330-handover.md # 外部データ管理方針の引継ぎ記録
+|   |   |   `-- work_plan.md         # 外部データ管理方針の作業計画
+|   |   `-- 20260812_05_x_api_input_adapter
+|   |       |-- 20260812_1345-handover.md # X API入力アダプターの引継ぎ記録
+|   |       `-- work_plan.md         # X API入力アダプターの作業計画
 |   |-- research                     # 調査結果を格納
 |   |   |-- 20260811_x_rules_on_duplicate_posts.md # Xの複数アカウント運用と重複投稿の扱い
 |   |   `-- 20260812_x_data_acquisition_options.md # X投稿データの正規取得・利用経路の調査
@@ -83,7 +88,8 @@ npm test
 |       |-- architecture_design
 |       |   `-- local_web_mvp.md     # 技術方式・拡張点・セキュリティ設計
 |       |-- detail_design
-|       |   `-- detection_engine.md  # 入力検証・検出・CSV出力の詳細設計
+|       |   |-- detection_engine.md  # 入力検証・検出・CSV出力の詳細設計
+|       |   `-- x_api_input_adapter.md # 保存済みX API Search JSONの変換設計
 |       |-- marketing                # マーケティング（未着手）
 |       |-- pricing
 |       |   `-- monetization_policy.md # マネタイズ方針・有料機能の境界

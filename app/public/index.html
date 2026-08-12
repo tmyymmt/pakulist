@@ -50,7 +50,8 @@
         <p id="file-status" class="field-note" aria-live="polite">ファイルは未選択です。</p>
         <details class="format-guide">
           <summary>必要な列・キーを確認する</summary>
-          <p><code>id</code>、<code>account</code>、<code>url</code>、<code>postedAt</code>、<code>text</code> が必要です。日時はタイムゾーンを含むISO 8601形式、URLは <code>https://</code> で始めます。</p>
+          <p>標準CSV/JSONでは <code>id</code>、<code>account</code>、<code>url</code>、<code>postedAt</code>、<code>text</code> が必要です。日時はタイムゾーンを含むISO 8601形式、URLは <code>https://</code> で始めます。</p>
+          <p>許可済みのX API v2 Searchレスポンスを保存したJSONは、<code>data</code> と <code>includes.users</code> を含めれば読み込めます。各投稿の <code>id</code>、<code>author_id</code>、<code>created_at</code>、<code>text</code> と、対応するUserの <code>id</code>、<code>username</code> を使って標準形式へ変換します。このアプリはX APIへ接続せず、資格情報も扱いません。</p>
         </details>
       </section>
 
