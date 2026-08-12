@@ -337,20 +337,68 @@ function validateOptions(options) {
   return settings;
 }
 
+function jaccardTokenSets(left, right) {
+  if (left.size === 0 || right.size === 0) return 0;
+
+  const [smaller, larger] = left.size <= right.size ? [left, right] : [right, left];
+  let intersection = 0;
+  for (const token of smaller) {
+    if (larger.has(token)) intersection += 1;
+  }
+  return intersection / (left.size + right.size - intersection);
+}
+
+function createPrefixIndexedTokenSets(posts, threshold) {
+  const tokenSets = posts.map((post) => tokenize(post.normalizedText));
+  const frequencies = new Map();
+  tokenSets.forEach((tokens) => {
+    tokens.forEach((token) => frequencies.set(token, (frequencies.get(token) || 0) + 1));
+  });
+
+  return tokenSets.map((tokens) => {
+    const orderedTokens = [...tokens].sort((left, right) => (
+      frequencies.get(left) - frequencies.get(right)
+      || left.localeCompare(right, 'en')
+    ));
+    const prefixLength = Math.max(0, orderedTokens.length - Math.ceil(threshold * orderedTokens.length) + 1);
+    return { tokens, prefixTokens: orderedTokens.slice(0, prefixLength) };
+  });
+}
+
 function clusterApproximate(posts, settings) {
   const unionFind = new UnionFind(posts.length);
   const pairSimilarities = new Map();
+  const normalizedAccounts = posts.map((post) => post.account.toLocaleLowerCase('en-US'));
+  const indexedTokenSets = createPrefixIndexedTokenSets(posts, settings.threshold);
+  const prefixIndex = new Map();
 
-  for (let leftIndex = 0; leftIndex < posts.length; leftIndex += 1) {
-    for (let rightIndex = leftIndex + 1; rightIndex < posts.length; rightIndex += 1) {
-      if (posts[leftIndex].account.toLocaleLowerCase('en-US') === posts[rightIndex].account.toLocaleLowerCase('en-US')) continue;
-      const similarity = jaccardSimilarity(posts[leftIndex].normalizedText, posts[rightIndex].normalizedText);
+  indexedTokenSets.forEach(({ tokens, prefixTokens }, index) => {
+    const candidateIndices = new Set();
+    prefixTokens.forEach((token) => {
+      prefixIndex.get(token)?.forEach((candidateIndex) => candidateIndices.add(candidateIndex));
+    });
+
+    candidateIndices.forEach((candidateIndex) => {
+      if (normalizedAccounts[candidateIndex] === normalizedAccounts[index]) return;
+
+      const candidateTokens = indexedTokenSets[candidateIndex].tokens;
+      const smallerSize = Math.min(tokens.size, candidateTokens.size);
+      const largerSize = Math.max(tokens.size, candidateTokens.size);
+      if (smallerSize === 0 || smallerSize / largerSize < settings.threshold) return;
+
+      const similarity = jaccardTokenSets(candidateTokens, tokens);
       if (similarity >= settings.threshold) {
-        unionFind.union(leftIndex, rightIndex);
-        pairSimilarities.set(`${leftIndex}:${rightIndex}`, similarity);
+        unionFind.union(candidateIndex, index);
+        pairSimilarities.set(`${candidateIndex}:${index}`, similarity);
       }
-    }
-  }
+    });
+
+    prefixTokens.forEach((token) => {
+      const indices = prefixIndex.get(token) || [];
+      indices.push(index);
+      prefixIndex.set(token, indices);
+    });
+  });
 
   const grouped = new Map();
   posts.forEach((post, index) => {

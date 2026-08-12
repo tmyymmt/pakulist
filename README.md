@@ -26,6 +26,14 @@ cd app
 npm test
 ```
 
+性能ベンチマークと回帰チェックは以下で実行する。`bench:check`は、完全一致・近似一致それぞれ1,000件・5,000件の固定シナリオが性能基準を超えると失敗する。
+
+```bash
+cd app
+npm run bench
+npm run bench:check
+```
+
 ### サンプルでの確認
 
 `app/examples/sample-posts.json` は標準形式の架空投稿データである。起動後にこのファイルを選択し、既定値で検出を実行すると、URL差を無視した完全一致クラスタが1件表示される。近似一致の例を確認する場合は、閾値を0.65以下に変更して再実行する。
@@ -64,9 +72,12 @@ npm test
 |   |   |-- 20260812_04_external_data_governance
 |   |   |   |-- 20260812_1330-handover.md # 外部データ管理方針の引継ぎ記録
 |   |   |   `-- work_plan.md         # 外部データ管理方針の作業計画
-|   |   `-- 20260812_05_x_api_input_adapter
-|   |       |-- 20260812_1345-handover.md # X API入力アダプターの引継ぎ記録
-|   |       `-- work_plan.md         # X API入力アダプターの作業計画
+|   |   |-- 20260812_05_x_api_input_adapter
+|   |   |   |-- 20260812_1345-handover.md # X API入力アダプターの引継ぎ記録
+|   |   |   `-- work_plan.md         # X API入力アダプターの作業計画
+|   |   `-- 20260812_06_detection_performance
+|   |       |-- 20260812_1400-handover.md # 検出性能改善の引継ぎ記録
+|   |       `-- work_plan.md         # 検出性能改善の作業計画
 |   |-- research                     # 調査結果を格納
 |   |   |-- 20260811_x_rules_on_duplicate_posts.md # Xの複数アカウント運用と重複投稿の扱い
 |   |   `-- 20260812_x_data_acquisition_options.md # X投稿データの正規取得・利用経路の調査
@@ -89,7 +100,8 @@ npm test
 |       |   `-- local_web_mvp.md     # 技術方式・拡張点・セキュリティ設計
 |       |-- detail_design
 |       |   |-- detection_engine.md  # 入力検証・検出・CSV出力の詳細設計
-|       |   `-- x_api_input_adapter.md # 保存済みX API Search JSONの変換設計
+|       |   |-- x_api_input_adapter.md # 保存済みX API Search JSONの変換設計
+|       |   `-- performance_and_responsiveness.md # 検出性能と処理中応答性の設計
 |       |-- marketing                # マーケティング（未着手）
 |       |-- pricing
 |       |   `-- monetization_policy.md # マネタイズ方針・有料機能の境界

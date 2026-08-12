@@ -200,15 +200,37 @@ async function loadFile() {
   }
 }
 
-function analyze() {
+function nextPaint() {
+  return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+}
+
+function setAnalysisPending(isPending) {
+  elements.fileInput.disabled = isPending;
+  elements.approximate.disabled = isPending;
+  elements.ignoreUrls.disabled = isPending;
+  elements.ignoreMentions.disabled = isPending;
+  elements.threshold.disabled = isPending || !elements.approximate.checked;
+  elements.analyzeButton.disabled = isPending || !posts;
+}
+
+async function analyze() {
   if (!posts) return;
   hideError();
+  clusters = [];
+  setAnalysisPending(true);
+  const count = posts.length.toLocaleString('ja-JP');
+  elements.resultsSummary.textContent = `${count}件を解析しています。近似一致は投稿数に応じて時間がかかることがあります。`;
+  setEmptyState('ブラウザ内で検出処理を実行しています。完了までこの画面を閉じずにお待ちください。');
+
   try {
+    await nextPaint();
     clusters = findDuplicateClusters(posts, currentOptions());
     renderClusters();
   } catch (error) {
     const errors = error instanceof InputValidationError ? error.errors : ['検出中に問題が起きました。設定と入力ファイルを確認してください。'];
     showError(errors);
+  } finally {
+    setAnalysisPending(false);
   }
 }
 
