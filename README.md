@@ -56,9 +56,12 @@ npm test
 |   |   |-- 20260812_02_update_evaluation_criteria
 |   |   |   |-- 20260812_1300-handover.md # 評価基準更新の引継ぎ記録
 |   |   |   `-- work_plan.md         # 評価基準更新の作業計画
-|   |   `-- 20260812_03_x_data_acquisition_decision
-|   |       |-- 20260812_1315-handover.md # Xデータ取得方針の引継ぎ記録
-|   |       `-- work_plan.md         # Xデータ取得方針の作業計画
+|   |   |-- 20260812_03_x_data_acquisition_decision
+|   |   |   |-- 20260812_1315-handover.md # Xデータ取得方針の引継ぎ記録
+|   |   |   `-- work_plan.md         # Xデータ取得方針の作業計画
+|   |   `-- 20260812_04_external_data_governance
+|   |       |-- 20260812_1330-handover.md # 外部データ管理方針の引継ぎ記録
+|   |       `-- work_plan.md         # 外部データ管理方針の作業計画
 |   |-- research                     # 調査結果を格納
 |   |   |-- 20260811_x_rules_on_duplicate_posts.md # Xの複数アカウント運用と重複投稿の扱い
 |   |   `-- 20260812_x_data_acquisition_options.md # X投稿データの正規取得・利用経路の調査
@@ -71,7 +74,8 @@ npm test
 |       |   `-- goal_and_usecases.md # ゴール・目的・ユースケース
 |       |-- system_requirements
 |       |   |-- system_requirements.md # 対象SNS・OSS/有料の切り分け・検出要件・規約遵守要件
-|       |   `-- x_data_acquisition_policy.md # X投稿データの正規取得・利用ポリシー
+|       |   |-- x_data_acquisition_policy.md # X投稿データの正規取得・利用ポリシー
+|       |   `-- external_data_governance.md # 外部データ連携のガバナンス要件
 |       |-- system_spec
 |       |   `-- spec.md              # ローカルWebアプリMVPのシステム仕様
 |       |-- overview_design
