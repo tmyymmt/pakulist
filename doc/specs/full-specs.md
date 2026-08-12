@@ -15,6 +15,7 @@ SNS（初期対応は X）上で同一または実質同一の投稿をしてい
 | ビジネス要件 | `doc/specs/business_requirements/goal_and_usecases.md` | ゴール・目的・ユースケース |
 | システム要件 | `doc/specs/system_requirements/system_requirements.md` | 対象SNS、OSS/有料の切り分け、検出要件、規約遵守要件 |
 | 取得ポリシー | `doc/specs/system_requirements/x_data_acquisition_policy.md` | 他アカウント投稿を正規に取得・利用する後続フェーズの条件、禁止事項、段階的導入 |
+| ガバナンス要件 | `doc/specs/system_requirements/external_data_governance.md` | 外部データ連携における最小化、保持、削除、再配布、資格情報、監査、インシデント対応 |
 | システム仕様 | `doc/specs/system_spec/spec.md` | 初期状態、入力・検出・出力・画面・セキュリティの仕様 |
 | 概要設計 | `doc/specs/overview_design/local_web_mvp.md` | 全体構成、処理フロー、コンポーネント責務、拡張方針 |
 | 方式設計 | `doc/specs/architecture_design/local_web_mvp.md` | 技術方式、モジュール境界、SNS/AI拡張点、セキュリティ設計 |
