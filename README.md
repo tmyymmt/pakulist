@@ -19,6 +19,30 @@ npm start
 
 表示されたURL（既定では `http://localhost:4173`）をブラウザで開く。アプリは投稿ファイルをサーバーへ送信・保存せず、ブラウザ内で処理する。実行前に必要な入力形式、検出範囲、制約を `doc/specs/system_spec/spec.md` で確認すること。
 
+## OrcaRouter意味的類似APIプロトタイプ
+
+`app/semantic-api-server.js`は、有償版の将来実装に備えた**ローカル専用の試作API**である。ブラウザUI、`detection.js`、現行MVPからは呼び出さず、本番の利用者認証、保存、課金、利用枠、X API取得も実装しない。既定で`127.0.0.1:4180`にだけバインドするため、公開インターネットへ公開してはならない。
+
+APIキー未設定でも、外部通信を行わずにHTTP境界を確認できる。
+
+```bash
+cd app
+npm run start:semantic-api
+curl http://127.0.0.1:4180/healthz
+```
+
+実APIを使うローカル試作では、取得したキーを**一時的なサーバープロセス環境変数**としてだけ設定する。キーを`.env`、リポジトリ、ブラウザ、CSV/JSON、ログ、Issue、PRへ保存してはならない。
+
+```bash
+cd app
+export ORCAROUTER_API_KEY='<OrcaRouterで取得したキー>'
+export ORCAROUTER_MODEL='openai/gpt-4o-mini'
+export SEMANTIC_API_BEARER_TOKEN='<ローカル呼び出し用のランダム値>'
+npm run start:semantic-api
+```
+
+`ORCAROUTER_MODEL`はプロバイダー接頭辞付きの固定モデルを指定する。再現性を保つため`orcarouter/auto`は受け付けない。設定、入力・出力、障害時の棄権、実運用の導入ゲートは`doc/specs/detail_design/semantic_similarity_evaluation.md`を正とする。
+
 テストは以下で実行する。
 
 ```bash
