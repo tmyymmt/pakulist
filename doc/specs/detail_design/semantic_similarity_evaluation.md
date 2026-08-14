@@ -45,6 +45,8 @@ AI導入候補は、同じ評価セット・同じ閾値・同じ棄権ルール
 
 `app/src/detection.js`、ブラウザUI、CSV/HTML出力は、AIプロバイダー、APIキー、HTTPクライアント、モデル名に依存してはならない。有料サービス側に`SemanticSimilarityProvider`を置き、正規化済みの候補ペアだけを渡す。AI判定の外部ゲートウェイはOrcaRouterを必須とし、プロバイダー固有のコードはこのアダプターに閉じ込める。別ゲートウェイへの変更は、価格設計・システム要件・評価結果を更新する明示的な方針変更として扱う。
 
+Issue #39では、この境界を確認するために`app/semantic-api-server.js`と`app/src/orcarouter-semantic-provider.js`を追加した。これはブラウザUI・`detection.js`から呼び出されない、ローカル専用の試作APIである。本番の利用者認証、事案別権限、永続化、課金、利用枠、X API取得は実装しない。
+
 ```json
 {
   "requestId": "opaque-request-id",
@@ -75,11 +77,38 @@ AI導入候補は、同じ評価セット・同じ閾値・同じ棄権ルール
 
 `score`は0以上1以下の数値であり、`label`は`match`、`non_match`、`abstain`だけを許容する。スコアは判定の信頼度として扱わず、モデル・プロンプト・評価セット・閾値の組み合わせの範囲でだけ解釈する。
 
+### 4.1 最小サーバーAPIプロトタイプ
+
+プロトタイプは、既定で`127.0.0.1:4180`だけにバインドする。`GET /healthz`はOrcaRouter設定済みかを真偽値だけで返し、キー・モデル・環境変数の値を返さない。`POST /v1/semantic-judgments`は、`requestId`、`candidateId`、`left.text`、`right.text`を受け付け、各本文を4,000文字以下へ制限する。
+
+| 条件 | HTTP応答 | 本文に含める内容 |
+| --- | --- | --- |
+| APIキー又は固定モデルが未設定 | 503 | `status: unavailable`、`label: abstain`、`reason: provider_not_configured`。外部通信を行わない。 |
+| 正常な構造化応答 | 200 | `status: completed`、ラベル、スコア、解決済みモデル、入力・出力トークン数。 |
+| 401、402、429、502、タイムアウト、応答不正 | 503 | `status: unavailable`、`label: abstain`、固定の理由コード、429時だけ`Retry-After`由来の秒数。上流本文は返さない。 |
+| 入力JSON・必須項目・本文長が不正 | 400 | 固定の入力エラーコードと利用者向けの検証メッセージ。 |
+
+`SEMANTIC_API_BEARER_TOKEN`を設定した場合だけ、ローカル呼び出しに`Authorization: Bearer`を要求する。未設定時のAPIは認証・公開運用を目的とせず、ループバックインターフェースだけでの試作に限定する。公開インターネットへバインド又は公開してはならない。
+
 ## 5. OrcaRouterアダプター
 
 OrcaRouterはOpenAI互換APIを提供し、ベースURLは`https://api.orcarouter.ai/v1`である。認証はBearer APIキー、モデルはprovider-prefixed ID、リクエストはチャット補完の標準形を用いる。[2] デフォルトの`orcarouter/auto`は、安価な稼働モデルを動的に選ぶため、再現性を必要とする評価実験では禁止する。[2]
 
 可用性のためにフォールバックチェーンを構成するときは、最大5モデルまでの`extra_body.models`と`route: fallback`を使える。[2] ただし、品質比較はモデル・プロンプトの版を固定して別途実行し、フォールバックの結果と混在させない。応答ヘッダー又は応答情報から、実際に解決されたモデルとフォールバック段階だけを記録する。
+
+### 5.1 プロトタイプの設定
+
+プロトタイプは`.env`ファイルを読まず、プロセス環境変数だけを読む。デプロイ時にはホスティング基盤のシークレットストアから環境変数へ注入し、ローカル試作ではターミナルの一時的な環境変数だけを用いる。APIキーをリポジトリ、ブラウザ、CSV/JSON、ログ、Issue、PRに保存してはならない。
+
+| 変数 | 必須 | 用途 | 制約 |
+| --- | --- | --- | --- |
+| `ORCAROUTER_API_KEY` | 実通信時 | OrcaRouterのBearer APIキー。 | サーバープロセスだけが読む。未設定なら外部通信なしで棄権する。 |
+| `ORCAROUTER_MODEL` | 実通信時 | 例: `openai/gpt-4o-mini`のような固定・プロバイダー接頭辞付きモデル。 | `orcarouter/auto`は再現性のため拒否する。 |
+| `ORCAROUTER_BASE_URL` | 任意 | 既定の`https://api.orcarouter.ai/v1`を上書きする。 | `https://` URLだけを受け入れる。 |
+| `SEMANTIC_API_BEARER_TOKEN` | 任意 | ローカル試作APIの呼び出しトークン。 | 設定時だけ`POST /v1/semantic-judgments`で要求する。本番の利用者認証ではない。 |
+| `SEMANTIC_API_HOST` / `SEMANTIC_API_PORT` | 任意 | 既定の`127.0.0.1:4180`を上書きする。 | 本番公開の設定として使わない。 |
+
+`npm --prefix app run start:semantic-api`で起動する。APIキー未設定の標準状態では`/healthz`が`configured: false`を返し、判定要求は503の棄権となるため、実データ又は実APIキーを使わずにHTTP境界を検証できる。
 
 | 事象 | サービスの応答 | OSSへの影響 |
 | --- | --- | --- |
@@ -104,7 +133,7 @@ monthlyCost = costPerJudgment × monthlyJudgments + subscriptionFee
 
 ## 7. 導入ゲート
 
-実API連携を実装又は有効化する前に、次の全条件を満たす必要がある。
+最小プロトタイプは、資格情報未設定時の非通信、固定モデル、上流障害の棄権、応答最小化を自動テストする。ただし、実API連携を実運用で有効化する前に、次の全条件を満たす必要がある。
 
 | ゲート | 必要な証跡 |
 | --- | --- |
