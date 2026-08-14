@@ -28,7 +28,7 @@
   </main>
 </div>
 <div class="status" id="status" aria-live="polite"></div>
-<div class="help">Space / Enter / Click: 次へ<br>Backspace / ←: 戻る</div>
+<div class="help">Space / Enter / → / Click: 次へ<br>Backspace / ←: 戻る</div>
 <script>
   const slides = [
     "cover.html",
@@ -67,7 +67,7 @@
   }
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === " " || event.key === "Enter") {
+    if (event.key === " " || event.key === "Enter" || event.key === "ArrowRight") {
       event.preventDefault();
       next();
     } else if (event.key === "Backspace" || event.key === "ArrowLeft") {

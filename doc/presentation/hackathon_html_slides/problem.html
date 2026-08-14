@@ -3,32 +3,42 @@
 <head>
 <meta charset="UTF-8">
 <style>
-  .slide-container { width: 1280px; min-height: 720px; box-sizing: border-box; background: #F7F9FC; color: #2D3748; font-family: "MS Mincho", "ＭＳ 明朝", serif; }
-  .header { margin-left: 92px; padding-top: 58px; width: 1096px; }
-  .header h1 { font-size: 48px; font-weight: 400; letter-spacing: 8px; line-height: 1.35; }
-  .header .rule { width: 1096px; height: 2px; background: #805AD5; margin-top: 20px; }
-  .content { margin-left: 92px; margin-top: 10px; width: 1096px; display: flex; gap: 70px; }
-  .statement { width: 655px; font-size: 38px; line-height: 1.85; letter-spacing: 2px; color: #2D3748; }
-  .statement strong { color: #805AD5; font-weight: 400; }
-  .facts { width: 330px; border-top: 1px solid #B7A6D9; }
-  .fact { border-bottom: 1px solid #D5DCE7; padding-top: 18px; padding-bottom: 18px; }
-  .fact .label { color: #805AD5; font-size: 18px; letter-spacing: 3px; }
-  .fact .text { margin-top: 8px; font-size: 22px; line-height: 1.65; color: #4A5568; }
-  .note { margin-left: 92px; margin-top: 25px; font-size: 21px; line-height: 1.6; color: #4A5568; letter-spacing: 1px; }
+  body { margin: 0; }
+  .slide-container { width: 1280px; min-height: 720px; margin-top: -1px; box-sizing: border-box; background: #F7F9FC; color: #2D3748; font-family: "MS Mincho", "ＭＳ 明朝", serif; }
+  .header { margin-left: 92px; padding-top: 48px; width: 1096px; }
+  .header h1 { font-size: 45px; font-weight: 400; letter-spacing: 8px; line-height: 1.32; }
+  .header .rule { width: 1096px; height: 2px; background: #805AD5; margin-top: 16px; }
+  .content { margin-left: 92px; margin-top: 32px; width: 1096px; display: flex; gap: 48px; }
+  .service { width: 612px; }
+  .service .tag { color: #805AD5; font-size: 19px; letter-spacing: 4px; }
+  .service .lead { margin-top: 16px; font-size: 35px; line-height: 1.68; letter-spacing: 2px; }
+  .service .lead strong { color: #805AD5; font-weight: 400; }
+  .service .detail { margin-top: 18px; font-size: 22px; line-height: 1.7; color: #4A5568; }
+  .outputs { width: 412px; border-top: 1px solid #B7A6D9; }
+  .output { border-bottom: 1px solid #D5DCE7; padding-top: 10px; padding-bottom: 10px; }
+  .output .label { color: #805AD5; font-size: 17px; letter-spacing: 3px; }
+  .output .title { margin-top: 4px; font-size: 24px; letter-spacing: 2px; }
+  .output .text { margin-top: 4px; font-size: 19px; line-height: 1.55; color: #4A5568; }
+  .note { margin-left: 92px; margin-top: 16px; width: 1096px; font-size: 20px; line-height: 1.6; color: #4A5568; letter-spacing: 1px; }
+  .note strong { color: #2D3748; font-weight: 400; }
 </style>
 </head>
 <body>
 <div class="slide-container">
-  <div class="header"><h1>候補を「判断できる証拠」へ</h1><div class="rule"></div></div>
+  <div class="header"><h1>サービスと成果物の概要</h1><div class="rule"></div></div>
   <div class="content">
-    <div class="statement">検出だけでは、<br><strong>対応につながらない。</strong><br>人が確認できる根拠へ<br>整理して初めて、<br>次の判断へ進める。</div>
-    <div class="facts">
-      <div class="fact"><div class="label">[ ROOT ]</div><div class="text">重複・後発類似投稿を候補として整理</div></div>
-      <div class="fact"><div class="label">[ EVIDENCE ]</div><div class="text">URL・時刻・本文・判定根拠を同時に提示</div></div>
-      <div class="fact"><div class="label">[ BOUNDARY ]</div><div class="text">最終判断は人へ。自動通報・関係断定はしない</div></div>
+    <div class="service">
+      <div class="tag">[ SERVICE ]</div>
+      <div class="lead">pakulistは、重複・後発類似投稿を<br><strong>人が判断できる証拠</strong>へ整理する<br>ローカル検証サービスです。</div>
+      <div class="detail">候補を見つけるだけでなく、投稿URL・時刻・本文・判定根拠を揃え、確認者が次の対応を判断できる状態を作ります。</div>
+    </div>
+    <div class="outputs">
+      <div class="output"><div class="label">[ WEB MVP ]</div><div class="title">ブラウザ内で安全に処理</div><div class="text">正規に用意したCSV / JSONをローカルで扱う。</div></div>
+      <div class="output"><div class="label">[ DETECTION ]</div><div class="title">候補を決定的に整理</div><div class="text">完全一致・近似一致・時系列候補を提示する。</div></div>
+      <div class="output"><div class="label">[ EVIDENCE ]</div><div class="title">根拠を出力</div><div class="text">URL・時刻・本文をCSV / HTMLで確認可能にする。</div></div>
     </div>
   </div>
-  <div class="note">[ PRINCIPLE ] 検出の自動化ではなく、判断可能な状態の再現性を作る。</div>
+  <div class="note">[ BOUNDARY ] <strong>最終判断は人に残す。</strong> 外部API・サーバー保存・自動通報は行わない。</div>
 </div>
 </body>
 </html>
