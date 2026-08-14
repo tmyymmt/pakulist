@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>pakulist ハッカソン発表</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; margin: 0; background: #F7F9FC; }
+  body { font-family: "MS Mincho", "ＭＳ 明朝", serif; }
+  .presentation { width: 100%; min-height: 100vh; display: grid; place-items: center; background: #F7F9FC; }
+  .stage { width: min(100vw, calc(100vh * 16 / 9)); aspect-ratio: 16 / 9; position: relative; background: #F7F9FC; cursor: pointer; }
+  iframe { width: 100%; height: 100%; border: 0; display: block; pointer-events: none; }
+  .status { position: fixed; left: 24px; bottom: 18px; color: #4A5568; font-size: 14px; letter-spacing: 1px; line-height: 1.4; user-select: none; }
+  .status strong { color: #805AD5; font-weight: 400; }
+  .help { position: fixed; right: 24px; bottom: 18px; color: #4A5568; font-size: 12px; letter-spacing: 1px; line-height: 1.4; text-align: right; user-select: none; }
+  @media (max-width: 640px) {
+    .status { left: 12px; bottom: 10px; font-size: 11px; }
+    .help { right: 12px; bottom: 10px; font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="presentation">
+  <main class="stage" id="stage" role="button" tabindex="0" aria-label="クリックで次のスライドへ">
+    <iframe id="slideFrame" title="pakulist ハッカソン発表スライド"></iframe>
+  </main>
+</div>
+<div class="status" id="status" aria-live="polite"></div>
+<div class="help">Space / Enter / → / Click: 次へ<br>Backspace / ←: 戻る</div>
+<script>
+  const slides = [
+    "cover.html",
+    "problem.html",
+    "plans.html",
+    "planning.html",
+    "prototype.html",
+    "criteria_1_4.html",
+    "criteria_5_8.html",
+    "next_steps.html",
+    "closing.html"
+  ];
+
+  const frame = document.getElementById("slideFrame");
+  const stage = document.getElementById("stage");
+  const status = document.getElementById("status");
+  let index = 0;
+
+  function setSlide(nextIndex) {
+    index = Math.max(0, Math.min(slides.length - 1, nextIndex));
+    frame.src = slides[index];
+    status.innerHTML = `<strong>${index + 1}</strong> / ${slides.length}`;
+    history.replaceState(null, "", `#${index + 1}`);
+  }
+
+  function next() {
+    if (index < slides.length - 1) setSlide(index + 1);
+  }
+
+  function previous() {
+    if (index > 0) setSlide(index - 1);
+  }
+
+  function initialIndex() {
+    const number = Number.parseInt(window.location.hash.slice(1), 10);
+    return Number.isInteger(number) && number >= 1 && number <= slides.length ? number - 1 : 0;
+  }
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === " " || event.key === "Enter" || event.key === "ArrowRight") {
+      event.preventDefault();
+      next();
+    } else if (event.key === "Backspace" || event.key === "ArrowLeft") {
+      event.preventDefault();
+      previous();
+    }
+  });
+
+  stage.addEventListener("click", next);
+  window.addEventListener("hashchange", () => setSlide(initialIndex()));
+  setSlide(initialIndex());
+</script>
+</body>
+</html>
