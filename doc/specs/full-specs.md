@@ -21,6 +21,7 @@ SNS（初期対応は X）上で同一または実質同一の投稿をしてい
 | 方式設計 | `doc/specs/architecture_design/local_web_mvp.md` | 技術方式、モジュール境界、SNS/AI拡張点、セキュリティ設計 |
 | 詳細設計 | `doc/specs/detail_design/detection_engine.md` | データモデル、検出アルゴリズム、入力検証、CSV出力 |
 | 詳細設計 | `doc/specs/detail_design/x_api_input_adapter.md` | 保存済みX API Search JSONを標準Post形式へ変換する入力アダプター |
+| 詳細設計 | `doc/specs/detail_design/x_api_usage_billing.md` | 有償版のX API取得における従量課金・定額利用枠、見積り、予約、停止、精算、監査 |
 | 詳細設計 | `doc/specs/detail_design/performance_and_responsiveness.md` | 最大5,000件の近似一致解析における性能基準、候補絞り込み、処理中応答性 |
 | 詳細設計 | `doc/specs/detail_design/browser_e2e_testing.md` | ブラウザE2Eの画面操作、入力エラー、CSV出力、安全な外部リンク、CI実行 |
 | 詳細設計 | `doc/specs/detail_design/evidence_package.md` | 手動確認・通報向けHTML証拠パッケージの出力内容、安全境界、検証条件 |
