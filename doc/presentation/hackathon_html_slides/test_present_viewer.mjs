@@ -52,28 +52,28 @@ const key = (value) => {
 };
 
 assert.equal(frame.src, "cover.html");
-assert.equal(status.innerHTML, "<strong>1</strong> / 8");
+assert.equal(status.innerHTML, "<strong>1</strong> / 9");
 assert.equal(key(" "), true);
 assert.equal(frame.src, "problem.html");
 assert.equal(key("Enter"), true);
-assert.equal(frame.src, "planning.html");
+assert.equal(frame.src, "plans.html");
 assert.equal(key("ArrowRight"), true);
-assert.equal(frame.src, "prototype.html");
-handlers["stage:click"]();
-assert.equal(frame.src, "criteria_1_4.html");
-assert.equal(key("Backspace"), true);
-assert.equal(frame.src, "prototype.html");
-assert.equal(key("ArrowLeft"), true);
 assert.equal(frame.src, "planning.html");
+handlers["stage:click"]();
+assert.equal(frame.src, "prototype.html");
+assert.equal(key("Backspace"), true);
+assert.equal(frame.src, "planning.html");
+assert.equal(key("ArrowLeft"), true);
+assert.equal(frame.src, "plans.html");
 assert.equal(key("ArrowLeft"), true);
 assert.equal(frame.src, "problem.html");
 assert.equal(key("ArrowLeft"), true);
 assert.equal(frame.src, "cover.html");
 assert.equal(key("ArrowLeft"), true);
 assert.equal(frame.src, "cover.html");
-windowStub.location.hash = "#8";
+windowStub.location.hash = "#9";
 handlers["window:hashchange"]();
 assert.equal(frame.src, "closing.html");
-assert.equal(status.innerHTML, "<strong>8</strong> / 8");
+assert.equal(status.innerHTML, "<strong>9</strong> / 9");
 
 console.log("index.html navigation checks passed");
