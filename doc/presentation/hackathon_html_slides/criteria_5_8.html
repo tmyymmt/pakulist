@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<style>
+  .slide-container { width: 1280px; min-height: 720px; box-sizing: border-box; background: #F7F9FC; color: #2D3748; font-family: "MS Mincho", "ＭＳ 明朝", serif; }
+  .header { margin-left: 84px; padding-top: 42px; width: 1112px; }
+  .header h1 { font-size: 46px; font-weight: 400; letter-spacing: 8px; line-height: 1.28; }
+  .rule { width: 1112px; height: 2px; background: #805AD5; margin-top: 14px; }
+  .summary { margin-left: 84px; margin-top: 4px; width: 1112px; display: flex; align-items: baseline; gap: 24px; }
+  .summary .mark { font-size: 22px; color: #805AD5; letter-spacing: 3px; }
+  .summary .statement { font-size: 29px; letter-spacing: 2px; line-height: 1.45; }
+  .summary strong { color: #805AD5; font-weight: 400; }
+  .table { margin-left: 84px; margin-top: 4px; width: 1112px; border-top: 1px solid #A99AC9; }
+  .row { display: flex; min-height: 92px; border-bottom: 1px solid #D3DAE5; }
+  .head { min-height: 42px; color: #805AD5; font-size: 17px; letter-spacing: 3px; }
+  .col-criterion { width: 225px; box-sizing: border-box; border-right: 1px solid #D3DAE5; padding-top: 8px; padding-left: 16px; font-size: 22px; line-height: 1.45; }
+  .col-achieved { width: 585px; box-sizing: border-box; border-right: 1px solid #D3DAE5; padding-top: 8px; padding-left: 22px; padding-right: 18px; font-size: 21px; line-height: 1.52; color: #4A5568; }
+  .col-next { width: 302px; box-sizing: border-box; padding-top: 8px; padding-left: 20px; padding-right: 14px; font-size: 19px; line-height: 1.52; color: #4A5568; }
+  .head .col-criterion, .head .col-achieved, .head .col-next { padding-top: 10px; font-size: 16px; }
+  .num { color: #805AD5; margin-right: 8px; }
+  .footer { margin-left: 84px; margin-top: 4px; width: 1112px; font-size: 18px; line-height: 1.5; letter-spacing: 1px; color: #4A5568; }
+</style>
+</head>
+<body>
+<div class="slide-container">
+  <div class="header"><h1>評価基準5〜8を達成</h1><div class="rule"></div></div>
+  <div class="summary"><div class="mark">[ ACHIEVED ]</div><div class="statement">後半4項目にも、<strong>実装または設計の証跡</strong>と次の検証手順を揃えた。</div></div>
+  <div class="table">
+    <div class="row head"><div class="col-criterion">評価基準</div><div class="col-achieved">達成した内容</div><div class="col-next">今後の対応（注記）</div></div>
+    <div class="row"><div class="col-criterion"><span class="num">05</span>技術的な作り込み</div><div class="col-achieved">入力検証、性能、E2E、安全な出力、入力アダプターを整備</div><div class="col-next">外部連携の運用テスト</div></div>
+    <div class="row"><div class="col-criterion"><span class="num">06</span>LLM・外部APIコスト</div><div class="col-achieved">AI／X APIの原価式、利用枠、停止・精算条件を設計</div><div class="col-next">契約単価と実測使用量を確認</div></div>
+    <div class="row"><div class="col-criterion"><span class="num">07</span>セキュリティ</div><div class="col-achieved">無保存MVP、保持・削除・監査・料金台帳の設計を整備</div><div class="col-next">認証・権限・削除を実装検証</div></div>
+    <div class="row"><div class="col-criterion"><span class="num">08</span>次世代性・独創性</div><div class="col-achieved">グラフ論理モデル、本文非返却API、導入ゲートを設計</div><div class="col-next">価値確認後にグラフ試作</div></div>
+  </div>
+  <div class="footer">[ NOTE ] 実装と設計をつなげ、次の実測・運用検証へ進める状態を達成した。</div>
+</div>
+</body>
+</html>

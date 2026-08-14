@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<style>
+  body { margin: 0; }
+  .slide-container { width: 1280px; min-height: 720px; margin-top: -8px; box-sizing: border-box; background: #F7F9FC; color: #2D3748; font-family: "MS Mincho", "ＭＳ 明朝", serif; text-align: center; }
+  .header { margin-left: 92px; padding-top: 48px; width: 1096px; }
+  .header h1 { font-size: 44px; font-weight: 400; letter-spacing: 7px; line-height: 1.35; }
+  .rule { width: 1096px; height: 2px; background: #805AD5; margin-top: 16px; }
+  .thesis { margin-top: 58px; font-size: 37px; line-height: 1.7; letter-spacing: 2px; }
+  .thesis strong { color: #805AD5; font-weight: 400; }
+  .items { margin-left: 92px; margin-top: 40px; width: 1096px; display: flex; border-top: 1px solid #B7A6D9; }
+  .item { width: 274px; min-height: 150px; box-sizing: border-box; border-right: 1px solid #D5DCE7; padding-top: 12px; text-align: left; }
+  .item:first-child { border-left: 1px solid #D5DCE7; }
+  .tag { margin-left: 18px; font-size: 17px; color: #805AD5; letter-spacing: 2px; }
+  .txt { margin: 10px 18px 0; font-size: 21px; line-height: 1.55; color: #4A5568; }
+  .footer { margin-top: 38px; font-size: 21px; letter-spacing: 1px; color: #4A5568; }
+</style>
+</head>
+<body>
+<div class="slide-container">
+  <div class="header"><h1>計画を主に作り、実装は最小に留めた</h1><div class="rule"></div></div>
+  <div class="thesis">本成果物は<strong>完成品ではない。</strong><br>不確実性を先に設計し、必要な範囲だけを実装した。</div>
+  <div class="items">
+    <div class="item"><div class="tag">[ DATA ]</div><div class="txt">正規な取得・権限・保持・削除をどう成立させるか</div></div>
+    <div class="item"><div class="tag">[ VALUE ]</div><div class="txt">誰が、どの課題に対価を払うか</div></div>
+    <div class="item"><div class="tag">[ AI ]</div><div class="txt">意味的類似の必要性と、精度・原価が成立するか</div></div>
+    <div class="item"><div class="tag">[ GRAPH ]</div><div class="txt">関係性を保存・表示してよい条件は何か</div></div>
+  </div>
+  <div class="footer">[ DECISION ] 取得・保存・AI連携を、未確定のまま先取りしない。</div>
+</div>
+</body>
+</html>

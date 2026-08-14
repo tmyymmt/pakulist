@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<style>
+  .slide-container { width: 1280px; min-height: 720px; box-sizing: border-box; background: #F7F9FC; color: #2D3748; font-family: "MS Mincho", "ＭＳ 明朝", serif; }
+  .header { margin-left: 84px; padding-top: 42px; width: 1112px; }
+  .header h1 { font-size: 46px; font-weight: 400; letter-spacing: 8px; line-height: 1.28; }
+  .rule { width: 1112px; height: 2px; background: #805AD5; margin-top: 14px; }
+  /* Reduced vertical gaps to bring total height under 720px */
+  .summary { margin-left: 84px; margin-top: 8px; width: 1112px; display: flex; align-items: baseline; gap: 18px; }
+  .summary .mark { font-size: 22px; color: #805AD5; letter-spacing: 3px; }
+  .summary .statement { font-size: 29px; letter-spacing: 2px; line-height: 1.45; }
+  .summary strong { color: #805AD5; font-weight: 400; }
+  .table { margin-left: 84px; margin-top: 12px; width: 1112px; border-top: 1px solid #A99AC9; }
+  /* Slightly reduced each row height and inner paddings to fit within total height without changing font sizes or title spacing */
+  .row { display: flex; min-height: 76px; border-bottom: 1px solid #D3DAE5; }
+  .head { min-height: 40px; color: #805AD5; font-size: 17px; letter-spacing: 3px; }
+  .col-criterion { width: 225px; box-sizing: border-box; border-right: 1px solid #D3DAE5; padding-top: 10px; padding-left: 16px; font-size: 22px; line-height: 1.45; }
+  .col-achieved { width: 585px; box-sizing: border-box; border-right: 1px solid #D3DAE5; padding-top: 10px; padding-left: 18px; padding-right: 16px; font-size: 21px; line-height: 1.52; color: #4A5568; }
+  .col-next { width: 302px; box-sizing: border-box; padding-top: 10px; padding-left: 18px; padding-right: 14px; font-size: 19px; line-height: 1.52; color: #4A5568; }
+  .head .col-criterion, .head .col-achieved, .head .col-next { padding-top: 8px; font-size: 16px; }
+  .num { color: #805AD5; margin-right: 8px; }
+  .footer { margin-left: 84px; margin-top: 8px; width: 1112px; font-size: 18px; line-height: 1.5; letter-spacing: 1px; color: #4A5568; }
+</style>
+</head>
+<body>
+<div class="slide-container">
+  <div class="header"><h1>評価基準1〜4を達成</h1><div class="rule"></div></div>
+  <div class="summary"><div class="mark">[ ACHIEVED ]</div><div class="statement">4項目すべてに、<strong>実装または設計の証跡</strong>と次の検証手順を揃えた。</div></div>
+  <div class="table">
+    <div class="row head"><div class="col-criterion">評価基準</div><div class="col-achieved">達成した内容</div><div class="col-next">今後の対応（注記）</div></div>
+    <div class="row"><div class="col-criterion"><span class="num">01</span>課題の実在性</div><div class="col-achieved">重複投稿候補の課題、規約留意点、利用者検証計画を整備</div><div class="col-next">ヒアリングで反復性を実測</div></div>
+    <div class="row"><div class="col-criterion"><span class="num">02</span>ビジネス成立性</div><div class="col-achieved">OSS／有料候補の境界、価格・利用枠の検証計画を整備</div><div class="col-next">価値・利用量・原価を実測</div></div>
+    <div class="row"><div class="col-criterion"><span class="num">03</span>完成度・デモ</div><div class="col-achieved">ローカルMVP、時系列候補、CSV／HTML、回帰テストを実装</div><div class="col-next">許可済みデータで利用者デモ</div></div>
+    <div class="row"><div class="col-criterion"><span class="num">04</span>AIの必然性</div><div class="col-achieved">決定的手法とAIの役割、評価・棄権・原価式を設計</div><div class="col-next">実モデルで精度と原価を評価</div></div>
+  </div>
+  <div class="footer">[ NOTE ] 今後の対応は、達成した設計・実装を実データと利用者で検証する次段階である。</div>
+</div>
+</body>
+</html>
