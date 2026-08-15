@@ -41,11 +41,26 @@ function postEvidence(post, heading) {
 </section>`;
 }
 
+function semanticEvidence(semantic) {
+  if (!semantic) return '';
+  const values = [
+    `意味的類似API: ${semantic.completed}件を確認`,
+    `match: ${semantic.matches}件`,
+    `non_match: ${semantic.nonMatches}件`,
+    `棄権: ${semantic.abstained}件`,
+    `利用不可: ${semantic.unavailable}件`,
+  ];
+  if (Number.isFinite(semantic.highestScore)) values.push(`最高スコア: ${Number(semantic.highestScore).toFixed(2)}`);
+  if (Array.isArray(semantic.resolvedModels) && semantic.resolvedModels.length > 0) values.push(`モデル: ${semantic.resolvedModels.join(', ')}`);
+  return `<p>\n    ${escapeHtml(values.join(' ／ '))}\n  </p>`;
+}
+
 function clusterEvidence(cluster) {
   return `<article class="evidence-item">
   <header>
     <h3>${escapeHtml(cluster.id)} <span class="badge">${cluster.matchType === 'exact' ? '完全一致' : '近似一致'}</span></h3>
     <p>最大類似度: <strong>${escapeHtml(Number(cluster.similarity).toFixed(2))}</strong> ／ アカウント: ${escapeHtml(cluster.accountCount)}件 ／ 投稿: ${escapeHtml(cluster.postCount)}件</p>
+    ${semanticEvidence(cluster.semantic)}
   </header>
   ${cluster.posts.map((post, index) => postEvidence(post, `証拠投稿 ${index + 1}`)).join('\n')}
 </article>`;
@@ -68,8 +83,16 @@ function optionEvidence(options) {
     ['近似一致の閾値', Number(options.threshold).toFixed(2)],
     ['URLを比較から除外', options.ignoreUrls ? '有効' : '無効'],
     ['メンションを比較から除外', options.ignoreMentions ? '有効' : '無効'],
+    ['意味的類似API', options.semantic ? '有効' : '無効'],
     ['解析モード', options.analysisMode === 'copyCandidates' ? '時系列コピー候補' : '重複クラスタ'],
   ];
+  if (options.semanticSummary) {
+    values.push(['意味的類似の確認件数', `${options.semanticSummary.completed}/${options.semanticSummary.reviewed}件`]);
+    values.push(['意味的類似のmatch件数', `${options.semanticSummary.matches}件`]);
+    values.push(['意味的類似の棄権・利用不可', `${options.semanticSummary.abstained + options.semanticSummary.unavailable}件`]);
+    values.push(['LLMによる近似一致の追加', `${options.semanticSummary.addedBySemantic || 0}件`]);
+    values.push(['LLMによる文字列近似候補の除外', `${options.semanticSummary.excludedBySemantic || 0}件`]);
+  }
   if (options.originPostId) values.push(['起点投稿ID', options.originPostId]);
   if (options.originAccount) values.push(['起点アカウント', `@${options.originAccount.replace(/^@+/, '')}`]);
   return values.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('\n');

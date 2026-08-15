@@ -1,5 +1,4 @@
 import { createEvidencePackage } from '/src/evidence.js';
-
 import {
   DEFAULT_OPTIONS,
   InputValidationError,
@@ -9,8 +8,12 @@ import {
   findLaterCopyCandidates,
   parseInput,
 } from '/src/detection.js';
+import { createSemanticCandidates, reconcileSemanticClusters } from '/src/semantic-cluster-reconciliation.js';
 
 const REPORT_HELP_URL = 'https://help.x.com/ja/forms';
+const PREVIEW_ACCESS_STORAGE_KEY = 'pakulist_preview_access';
+const MAX_SEMANTIC_JUDGMENTS = 50;
+const SEMANTIC_CONCURRENCY = 3;
 
 const elements = {
   analyzeButton: document.querySelector('#analyze-button'),
@@ -26,6 +29,8 @@ const elements = {
   originPostId: document.querySelector('#origin-post-id'),
   resultsArea: document.querySelector('#results-area'),
   resultsSummary: document.querySelector('#results-summary'),
+  semantic: document.querySelector('#semantic'),
+  semanticStatus: document.querySelector('#semantic-status'),
   threshold: document.querySelector('#threshold'),
   thresholdValue: document.querySelector('#threshold-value'),
 };
@@ -34,6 +39,29 @@ let posts = null;
 let clusters = [];
 let copyCandidates = [];
 let analysisMode = 'clusters';
+let semanticSummary = null;
+
+function initializePreviewAccessToken() {
+  const url = new URL(window.location.href);
+  const accessToken = url.searchParams.get('access');
+  if (!accessToken) return;
+  try {
+    window.sessionStorage.setItem(PREVIEW_ACCESS_STORAGE_KEY, accessToken);
+  } catch {
+    return;
+  }
+  url.searchParams.delete('access');
+  window.history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`);
+}
+
+function previewAccessHeaders() {
+  try {
+    const accessToken = window.sessionStorage.getItem(PREVIEW_ACCESS_STORAGE_KEY);
+    return accessToken ? { 'X-Pakulist-Preview-Access': accessToken } : {};
+  } catch {
+    return {};
+  }
+}
 
 function clearChildren(element) {
   while (element.firstChild) element.removeChild(element.firstChild);
@@ -113,6 +141,36 @@ function formatTimeDifference(timeDifferenceMs) {
   return segments.join('');
 }
 
+function semanticStatusText(summary) {
+  if (!summary) return '';
+  if (summary.total === 0) return ' 意味的類似の確認対象はありませんでした。';
+  const parts = [`意味的確認 ${summary.completed}/${summary.reviewed}件完了`];
+  if (summary.matches > 0) parts.push(`match ${summary.matches}件`);
+  if (summary.nonMatches > 0) parts.push(`non_match ${summary.nonMatches}件`);
+  if (summary.abstained > 0) parts.push(`棄権 ${summary.abstained}件`);
+  if (summary.unavailable > 0) parts.push(`利用不可 ${summary.unavailable}件`);
+  if (summary.skipped > 0) parts.push(`上限により未確認 ${summary.skipped}件`);
+  if (summary.addedBySemantic > 0) parts.push(`LLM追加 ${summary.addedBySemantic}件`);
+  if (summary.excludedBySemantic > 0) parts.push(`LLM除外 ${summary.excludedBySemantic}件`);
+  return ` ${parts.join('、')}。`;
+}
+
+function createSemanticAnnotation(cluster) {
+  if (!cluster.semantic) return null;
+  const annotation = document.createElement('p');
+  annotation.className = 'semantic-annotation';
+  const { completed, matches, nonMatches, abstained, unavailable, highestScore, resolvedModels } = cluster.semantic;
+  const parts = [`意味的類似API: ${completed}件を確認`];
+  if (matches > 0) parts.push(`match ${matches}件`);
+  if (nonMatches > 0) parts.push(`non_match ${nonMatches}件`);
+  if (abstained > 0) parts.push(`棄権 ${abstained}件`);
+  if (unavailable > 0) parts.push(`利用不可 ${unavailable}件`);
+  if (Number.isFinite(highestScore)) parts.push(`最高スコア ${highestScore.toFixed(2)}`);
+  if (resolvedModels.length > 0) parts.push(`モデル ${resolvedModels.join(', ')}`);
+  annotation.textContent = parts.join(' ／ ');
+  return annotation;
+}
+
 function renderPost(post) {
   const item = document.createElement('article');
   item.className = 'evidence-post';
@@ -178,7 +236,10 @@ function renderCluster(cluster) {
   caution.className = 'cluster-caution';
   caution.append('通報の要否は利用者が確認・判断してください。 ', createExternalLink(REPORT_HELP_URL, 'Xの通報ヘルプを開く'));
 
-  card.append(header, metrics, evidenceTitle, evidence, caution);
+  card.append(header, metrics);
+  const semanticAnnotation = createSemanticAnnotation(cluster);
+  if (semanticAnnotation) card.append(semanticAnnotation);
+  card.append(evidenceTitle, evidence, caution);
   return card;
 }
 
@@ -253,7 +314,7 @@ function renderClusters() {
   clearChildren(elements.resultsArea);
   if (clusters.length === 0) {
     setEmptyState('異なるアカウント間で条件に一致する重複投稿は検出されませんでした。設定を確認するか、別の入力データをお試しください。');
-    elements.resultsSummary.textContent = `${posts.length.toLocaleString('ja-JP')}件を解析し、検出クラスタは0件でした。`;
+    elements.resultsSummary.textContent = `${posts.length.toLocaleString('ja-JP')}件を解析し、検出クラスタは0件でした。${semanticStatusText(semanticSummary)}`;
     elements.downloadButton.disabled = true;
     elements.evidenceButton.disabled = true;
     return;
@@ -262,7 +323,7 @@ function renderClusters() {
   elements.resultsArea.className = 'cluster-list';
   clusters.forEach((cluster) => elements.resultsArea.append(renderCluster(cluster)));
   const evidencePosts = clusters.reduce((total, cluster) => total + cluster.postCount, 0);
-  elements.resultsSummary.textContent = `${posts.length.toLocaleString('ja-JP')}件を解析し、${clusters.length.toLocaleString('ja-JP')}件の検出クラスタ（証拠投稿 ${evidencePosts.toLocaleString('ja-JP')}件）を表示しています。`;
+  elements.resultsSummary.textContent = `${posts.length.toLocaleString('ja-JP')}件を解析し、${clusters.length.toLocaleString('ja-JP')}件の検出クラスタ（証拠投稿 ${evidencePosts.toLocaleString('ja-JP')}件）を表示しています。${semanticStatusText(semanticSummary)}`;
   elements.downloadButton.disabled = false;
   elements.evidenceButton.disabled = false;
 }
@@ -281,6 +342,7 @@ async function loadFile() {
   posts = null;
   clusters = [];
   copyCandidates = [];
+  semanticSummary = null;
   analysisMode = 'clusters';
   elements.analyzeButton.disabled = true;
   elements.downloadButton.disabled = true;
@@ -321,9 +383,163 @@ function setAnalysisPending(isPending) {
   elements.ignoreMentions.disabled = isPending;
   elements.originAccount.disabled = isPending;
   elements.originPostId.disabled = isPending;
+  elements.semantic.disabled = isPending;
   elements.threshold.disabled = isPending || !elements.approximate.checked;
   elements.analyzeButton.disabled = isPending || !posts;
   elements.evidenceButton.disabled = isPending || (analysisMode === 'copyCandidates' ? copyCandidates.length === 0 : clusters.length === 0);
+}
+
+function createSemanticPairs(clusterList) {
+  return createSemanticCandidates(posts, clusterList);
+}
+
+async function semanticApiRequest(path, options = {}) {
+  const response = await fetch(path, {
+    headers: { Accept: 'application/json', ...previewAccessHeaders(), ...(options.headers || {}) },
+    ...options,
+  });
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch {
+    payload = null;
+  }
+  return { response, payload };
+}
+
+async function ensureSemanticApiReady() {
+  elements.semanticStatus.textContent = 'ローカル意味的類似APIの設定を確認しています。';
+  try {
+    const { response, payload } = await semanticApiRequest('/api/semantic-status');
+    if (!response.ok || !payload || payload.provider !== 'orcarouter') {
+      throw new Error(payload?.error?.message || 'ローカル意味的類似APIに接続できません。');
+    }
+    if (!payload.configured) {
+      elements.semantic.checked = false;
+      elements.semanticStatus.textContent = '意味的類似判定は利用できません。ローカルAPIを、固定モデルとOrcaRouter APIキーを設定して起動してください。';
+      return false;
+    }
+    elements.semanticStatus.textContent = '意味的類似判定を利用できます。文字列近似候補と時系列近傍の発見候補をローカルAPI経由で確認します。完全一致は送信しません。';
+    return true;
+  } catch (error) {
+    elements.semantic.checked = false;
+    elements.semanticStatus.textContent = error instanceof Error ? error.message : 'ローカル意味的類似APIに接続できません。';
+    return false;
+  }
+}
+
+async function requestSemanticJudgment(pair, index) {
+  const requestId = `semantic-${Date.now()}-${index + 1}`;
+  try {
+    const { response, payload } = await semanticApiRequest('/api/semantic-judgments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        requestId,
+        candidateId: pair.candidateId,
+        left: { text: pair.left.text },
+        right: { text: pair.right.text },
+      }),
+    });
+    if (payload?.status === 'completed' || payload?.status === 'unavailable') return payload;
+    return {
+      requestId,
+      candidateId: pair.candidateId,
+      status: 'unavailable',
+      label: 'abstain',
+      score: 0,
+      provider: 'orcarouter',
+      resolvedModel: null,
+      usage: { inputTokens: 0, outputTokens: 0 },
+      reason: payload?.error?.code || `semantic_api_http_${response.status}`,
+      retryAfterSeconds: null,
+    };
+  } catch {
+    return {
+      requestId,
+      candidateId: pair.candidateId,
+      status: 'unavailable',
+      label: 'abstain',
+      score: 0,
+      provider: 'orcarouter',
+      resolvedModel: null,
+      usage: { inputTokens: 0, outputTokens: 0 },
+      reason: 'semantic_api_unreachable',
+      retryAfterSeconds: null,
+    };
+  }
+}
+
+function summarizeSemanticResults(pairs, results, totalPairCount) {
+  const judgments = new Map();
+  const summary = {
+    total: totalPairCount,
+    reviewed: pairs.length,
+    completed: 0,
+    matches: 0,
+    nonMatches: 0,
+    abstained: 0,
+    unavailable: 0,
+    skipped: Math.max(0, totalPairCount - pairs.length),
+    addedBySemantic: 0,
+    excludedBySemantic: 0,
+  };
+
+  results.forEach((result, index) => {
+    const pair = pairs[index];
+    judgments.set(pair.candidateId, result);
+    if (result.status === 'completed') {
+      summary.completed += 1;
+      if (result.label === 'match') summary.matches += 1;
+      else if (result.label === 'non_match') summary.nonMatches += 1;
+      else summary.abstained += 1;
+    } else {
+      summary.unavailable += 1;
+    }
+  });
+
+  const reconciled = reconcileSemanticClusters({
+    posts,
+    baselineClusters: clusters,
+    candidates: pairs,
+    judgments,
+  });
+  clusters = reconciled.clusters;
+  summary.addedBySemantic = reconciled.addedBySemantic;
+  summary.excludedBySemantic = reconciled.excludedBySemantic;
+  return summary;
+}
+
+async function judgeSemanticCandidates() {
+  const allPairs = createSemanticPairs(clusters);
+  const reviewPairs = allPairs.slice(0, MAX_SEMANTIC_JUDGMENTS);
+  if (reviewPairs.length === 0) {
+    return {
+      total: 0,
+      reviewed: 0,
+      completed: 0,
+      matches: 0,
+      nonMatches: 0,
+      abstained: 0,
+      unavailable: 0,
+      skipped: 0,
+      addedBySemantic: 0,
+      excludedBySemantic: 0,
+    };
+  }
+
+  const results = new Array(reviewPairs.length);
+  let nextIndex = 0;
+  const worker = async () => {
+    while (nextIndex < reviewPairs.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      elements.resultsSummary.textContent = `${posts.length.toLocaleString('ja-JP')}件を解析し、意味的類似を確認しています（${index + 1}/${reviewPairs.length}件）。`;
+      results[index] = await requestSemanticJudgment(reviewPairs[index], index);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(SEMANTIC_CONCURRENCY, reviewPairs.length) }, worker));
+  return summarizeSemanticResults(reviewPairs, results, allPairs.length);
 }
 
 async function analyze() {
@@ -331,8 +547,13 @@ async function analyze() {
   hideError();
   clusters = [];
   copyCandidates = [];
+  semanticSummary = null;
   const origin = currentOrigin();
   analysisMode = origin ? 'copyCandidates' : 'clusters';
+  const useSemantic = elements.semantic.checked && !origin;
+  if (elements.semantic.checked && origin) {
+    elements.semanticStatus.textContent = '起点指定モードでは意味的類似判定を実行せず、決定的な後発候補だけを表示します。';
+  }
   setAnalysisPending(true);
   const count = posts.length.toLocaleString('ja-JP');
   elements.resultsSummary.textContent = `${count}件を解析しています。近似一致は投稿数に応じて時間がかかることがあります。`;
@@ -345,6 +566,9 @@ async function analyze() {
       renderCopyCandidates();
     } else {
       clusters = findDuplicateClusters(posts, currentOptions());
+      if (useSemantic) {
+        semanticSummary = await judgeSemanticCandidates();
+      }
       renderClusters();
     }
   } catch (error) {
@@ -385,6 +609,8 @@ function downloadEvidencePackage() {
     copyCandidates,
     options: {
       ...currentOptions(),
+      semantic: elements.semantic.checked,
+      semanticSummary,
       analysisMode,
       ...origin,
     },
@@ -409,11 +635,29 @@ function resetResultsOnSettingChange() {
   if (!posts) return;
   clusters = [];
   copyCandidates = [];
+  semanticSummary = null;
   analysisMode = 'clusters';
   elements.downloadButton.disabled = true;
   elements.evidenceButton.disabled = true;
   elements.resultsSummary.textContent = '設定が変わりました。再度「重複投稿を検出する」を選択してください。';
   setEmptyState('設定を変更しました。検出を再実行してください。');
+}
+
+async function handleSemanticSettingChange() {
+  if (!elements.semantic.checked) {
+    elements.semanticStatus.textContent = '意味的類似判定は無効です。投稿本文はブラウザ外へ送信されません。';
+    resetResultsOnSettingChange();
+    return;
+  }
+  if (currentOrigin()) {
+    elements.semantic.checked = false;
+    elements.semanticStatus.textContent = '起点指定モードでは意味的類似判定を利用できません。';
+    return;
+  }
+  elements.semantic.disabled = true;
+  const ready = await ensureSemanticApiReady();
+  elements.semantic.disabled = false;
+  if (ready) resetResultsOnSettingChange();
 }
 
 elements.fileInput.addEventListener('change', loadFile);
@@ -433,7 +677,9 @@ elements.threshold.addEventListener('input', () => {
 [elements.originPostId, elements.originAccount].forEach((element) => {
   element.addEventListener('input', resetResultsOnSettingChange);
 });
+elements.semantic.addEventListener('change', handleSemanticSettingChange);
 
+initializePreviewAccessToken();
 Object.assign(elements.approximate, { checked: DEFAULT_OPTIONS.approximate });
 Object.assign(elements.ignoreUrls, { checked: DEFAULT_OPTIONS.ignoreUrls });
 Object.assign(elements.ignoreMentions, { checked: DEFAULT_OPTIONS.ignoreMentions });

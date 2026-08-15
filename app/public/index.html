@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="正規取得済みの投稿データから、異なるアカウント間の重複投稿をローカルで検出します。" />
+    <meta name="description" content="正規取得済みの投稿データから、異なるアカウント間の重複投稿を検出し、必要に応じてローカルAPI経由の意味的類似判定を行います。" />
     <title>pakulist | 重複投稿の検出</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
@@ -21,9 +21,9 @@
 
     <main id="main-content" class="shell page-content">
       <section class="hero" aria-labelledby="hero-title">
-        <p class="eyebrow">決定的な判定だけを、端末内で。</p>
-        <h2 id="hero-title">重複投稿を、証拠の形に整理する。</h2>
-        <p>正規に取得したCSVまたはJSONを選択すると、同じ内容または近い内容を異なるアカウントから投稿している候補を検出します。投稿データはこのブラウザの外に送信・保存されません。</p>
+          <p class="eyebrow">決定的な候補を、必要に応じて意味的に確認する。</p>
+          <h2 id="hero-title">重複投稿を、証拠の形に整理する。</h2>
+          <p>正規に取得したCSVまたはJSONを選択すると、同じ内容または近い内容を異なるアカウントから投稿している候補を検出します。意味的類似判定を有効にした場合は、文字列近似候補に加えて時系列近傍の発見候補をローカルAPI経由でOrcaRouterへ送信し、LLM判定で近似一致を除外・追加します。完全一致はブラウザ内だけで判定します。</p>
       </section>
 
       <section id="usage" class="notice" aria-label="利用前の確認">
@@ -31,7 +31,8 @@
         <ul>
           <li>入力するのは、SNSの規約・開発者条件に沿って取得した投稿データだけにしてください。</li>
           <li>表示結果は候補です。違反の最終判断と通報は利用者が行ってください。</li>
-          <li>このアプリは自動通報、SNSへの投稿、外部API呼び出しを行いません。</li>
+          <li>このアプリは自動通報やSNSへの投稿を行いません。意味的類似判定を有効にした場合だけ、文字列近似候補と時系列近傍の発見候補の本文をローカルAPI経由でOrcaRouterへ送信します。完全一致は送信しません。</li>
+          <li>意味的類似判定はローカルで起動した試作APIでのみ利用できます。APIキーはブラウザ、入力ファイル、リポジトリへ保存しないでください。</li>
           <li>異なるアカウント間の候補を検出するには、比較対象となる複数アカウントの投稿データが必要です。単一アカウントのアーカイブだけでは候補を検出できない場合があります。</li>
         </ul>
       </section>
@@ -61,7 +62,7 @@
           <p class="step">02</p>
           <div>
             <h2 id="settings-title">判定を設定</h2>
-            <p>完全一致は常に検出します。近似一致は単語トークン集合の重なりで判定します。</p>
+            <p>完全一致は常にブラウザ内だけで検出します。近似一致は単語トークン集合で候補化します。意味的類似を有効にすると、LLMの一致は最終近似一致に追加し、LLMの不一致は文字列近似候補から除外します。</p>
           </div>
         </div>
         <div class="settings-grid">
@@ -72,6 +73,14 @@
               <small>意味の理解ではなく、決定的な文字列トークンの類似度を使います。</small>
             </span>
           </label>
+          <label class="toggle-row" for="semantic">
+            <input id="semantic" type="checkbox" />
+            <span>
+              <strong>OrcaRouterで意味的類似を確認する</strong>
+              <small>文字列近似候補と時系列近傍の発見候補を、ローカルAPI経由で補助判定します。LLMの一致は追加し、不一致は除外します。完全一致は送信しません。起点指定モードでは使用できません。</small>
+            </span>
+          </label>
+          <p id="semantic-status" class="field-note semantic-status" aria-live="polite">意味的類似判定は無効です。</p>
           <label class="range-row" for="threshold">
             <span>
               <strong>近似一致の閾値</strong>
