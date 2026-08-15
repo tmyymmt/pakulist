@@ -1,0 +1,16 @@
+{
+  "data": [
+    {"id":"1915999999990000001","author_id":"smoke_a","created_at":"2026-08-14T00:00:00Z","text":"新機能は本日18時に公開します。"},
+    {"id":"1915999999990000002","author_id":"smoke_b","created_at":"2026-08-14T00:01:00Z","text":"新機能は本日18時に公開しません。"},
+    {"id":"1915999999990000003","author_id":"smoke_c","created_at":"2026-08-14T00:02:00Z","text":"本日の集まりは取りやめになりました。"},
+    {"id":"1915999999990000004","author_id":"smoke_d","created_at":"2026-08-14T00:03:00Z","text":"予定していたミーティングは中止です。"}
+  ],
+  "includes": {
+    "users": [
+      {"id":"smoke_a","username":"reconcile_alpha"},
+      {"id":"smoke_b","username":"reconcile_bravo"},
+      {"id":"smoke_c","username":"reconcile_charlie"},
+      {"id":"smoke_d","username":"reconcile_delta"}
+    ]
+  }
+}

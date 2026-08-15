@@ -4,3 +4,6 @@ app/playwright-report/
 .env
 .env.*
 !.env.example
+
+app/*.log
+app/*.pid

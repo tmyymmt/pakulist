@@ -6,16 +6,21 @@ import { fileURLToPath } from 'node:url';
 const directory = dirname(fileURLToPath(import.meta.url));
 const publicDirectory = resolve(directory, 'public');
 const sourceDirectory = resolve(directory, 'src');
-const host = process.env.HOST || '0.0.0.0';
+const host = process.env.HOST || '127.0.0.1';
 const displayHost = host === '0.0.0.0' ? 'localhost' : host;
 const port = Number.parseInt(process.env.PORT || '4173', 10);
+const semanticApiHost = process.env.SEMANTIC_API_HOST || '127.0.0.1';
+const semanticApiPort = Number.parseInt(process.env.SEMANTIC_API_PORT || '4180', 10);
+const semanticApiOrigin = `http://${semanticApiHost}:${semanticApiPort}`;
+const semanticApiToken = process.env.SEMANTIC_API_BEARER_TOKEN || '';
+const SEMANTIC_PROXY_TIMEOUT_MS = 12_000;
 
 const contentTypes = {
   '.css': 'text/css; charset=utf-8',
   '.html': 'text/html; charset=utf-8',
   '.ico': 'image/x-icon',
   '.js': 'text/javascript; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
+  '.json': 'application/json',
   '.svg': 'image/svg+xml',
 };
 
@@ -28,6 +33,10 @@ function send(response, status, body, headers = {}) {
     ...headers,
   });
   response.end(body);
+}
+
+function sendJson(response, status, payload) {
+  send(response, status, JSON.stringify(payload), { 'Content-Type': 'application/json; charset=utf-8' });
 }
 
 function resolveStaticPath(rootDirectory, relativePath) {
@@ -46,8 +55,66 @@ function filePathFromUrl(url) {
   return resolveStaticPath(publicDirectory, relativePath);
 }
 
+function isLoopbackAddress(address) {
+  return address === '127.0.0.1' || address === '::1' || address === '::ffff:127.0.0.1';
+}
+
+async function readRequestBody(request) {
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of request) {
+    size += chunk.length;
+    if (size > 32 * 1024) throw new RangeError('リクエスト本文は32KB以下にしてください。');
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
+}
+
+async function proxySemanticRequest(request, response, targetPath) {
+  if (!isLoopbackAddress(request.socket.remoteAddress || '')) {
+    sendJson(response, 403, { error: { code: 'local_only', message: '意味的類似判定はローカル接続からのみ利用できます。' } });
+    return;
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), SEMANTIC_PROXY_TIMEOUT_MS);
+  try {
+    const headers = { Accept: 'application/json' };
+    if (request.method === 'POST') headers['Content-Type'] = 'application/json';
+    if (semanticApiToken) headers.Authorization = `Bearer ${semanticApiToken}`;
+
+    const upstream = await fetch(`${semanticApiOrigin}${targetPath}`, {
+      method: request.method,
+      headers,
+      body: request.method === 'POST' ? await readRequestBody(request) : undefined,
+      signal: controller.signal,
+    });
+    const content = await upstream.text();
+    send(response, upstream.status, content, { 'Content-Type': 'application/json; charset=utf-8' });
+  } catch (error) {
+    const message = error instanceof RangeError
+      ? error.message
+      : 'ローカルの意味的類似APIに接続できません。APIを起動してから再度お試しください。';
+    sendJson(response, error instanceof RangeError ? 400 : 503, { error: { code: 'semantic_api_unavailable', message } });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 const server = createServer(async (request, response) => {
-  if (!['GET', 'HEAD'].includes(request.method || '')) {
+  const method = request.method || '';
+  const path = new URL(request.url || '/', `http://${host}`).pathname;
+
+  if (path === '/api/semantic-status' && method === 'GET') {
+    await proxySemanticRequest(request, response, '/healthz');
+    return;
+  }
+  if (path === '/api/semantic-judgments' && method === 'POST') {
+    await proxySemanticRequest(request, response, '/v1/semantic-judgments');
+    return;
+  }
+
+  if (!['GET', 'HEAD'].includes(method)) {
     send(response, 405, 'Method Not Allowed', { Allow: 'GET, HEAD', 'Content-Type': 'text/plain; charset=utf-8' });
     return;
   }
@@ -73,7 +140,7 @@ const server = createServer(async (request, response) => {
     }
     const extension = extname(filePath).toLowerCase();
     const headers = { 'Content-Type': contentTypes[extension] || 'application/octet-stream' };
-    if (request.method === 'HEAD') {
+    if (method === 'HEAD') {
       send(response, 200, '', headers);
       return;
     }

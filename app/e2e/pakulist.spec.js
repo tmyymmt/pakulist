@@ -198,3 +198,109 @@ test.describe('入力エラー', () => {
     await expect(page.locator('#error-area')).toContainText('最大5,000件');
   });
 });
+
+
+test('OrcaRouter意味的類似APIは近似一致だけを補助判定し、完全一致は送信しない', async ({ page }) => {
+  let judgmentRequests = 0;
+  await page.route('**/api/semantic-status', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ status: 'ok', provider: 'orcarouter', configured: true }),
+    });
+  });
+  await page.route('**/api/semantic-judgments', async (route) => {
+    judgmentRequests += 1;
+    const request = JSON.parse(route.request().postData() || '{}');
+    expect(request.left.text).toContain('勉強会');
+    expect(request.right.text).toContain('勉強会');
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        requestId: request.requestId,
+        candidateId: request.candidateId,
+        status: 'completed',
+        label: 'match',
+        score: 0.92,
+        provider: 'orcarouter',
+        resolvedModel: 'openai/gpt-4o-mini',
+        usage: { inputTokens: 24, outputTokens: 8 },
+        reason: null,
+        retryAfterSeconds: null,
+      }),
+    });
+  });
+
+  await page.goto('/');
+  await page.locator('#semantic').check();
+  await expect(page.locator('#semantic-status')).toContainText('意味的類似判定を利用できます');
+  await uploadJson(page, {
+    posts: [
+      standardPost({ id: 'exact-left', account: 'alpha', text: '完全一致の投稿はローカルだけで判定します。' }),
+      standardPost({ id: 'exact-right', account: 'beta', url: 'https://x.com/beta/status/2', postedAt: '2026-08-12T00:01:00Z', text: '完全一致の投稿はローカルだけで判定します。' }),
+      standardPost({ id: 'semantic-left', account: 'gamma', url: 'https://x.com/gamma/status/3', postedAt: '2026-08-12T00:02:00Z', text: '来週の勉強会は木曜日の19時から開始します。' }),
+      standardPost({ id: 'semantic-right', account: 'delta', url: 'https://x.com/delta/status/4', postedAt: '2026-08-12T00:03:00Z', text: '来週の勉強会は木曜19時から開始します。' }),
+    ],
+  });
+
+  await page.locator('#analyze-button').click();
+  await expect(page.locator('#results-summary')).toContainText('意味的確認 1/1件完了');
+  await expect(page.locator('.semantic-annotation')).toContainText('match 1件');
+  await expect(page.locator('.semantic-annotation')).toContainText('最高スコア 0.92');
+  await expect(page.locator('.cluster-card').filter({ hasText: '完全一致' }).locator('.semantic-annotation')).toHaveCount(0);
+  expect(judgmentRequests).toBe(1);
+});
+
+
+test('LLM判定で文字列近似の非一致を除外し、発見候補の一致を追加する', async ({ page }) => {
+  await page.route('**/api/semantic-status', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ status: 'ok', provider: 'orcarouter', configured: true }),
+    });
+  });
+  await page.route('**/api/semantic-judgments', async (route) => {
+    const request = JSON.parse(route.request().postData() || '{}');
+    const isCancellationPair = request.left.text.includes('集まり') || request.right.text.includes('集まり');
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        requestId: request.requestId,
+        candidateId: request.candidateId,
+        status: 'completed',
+        label: isCancellationPair ? 'match' : 'non_match',
+        score: isCancellationPair ? 0.93 : 0.05,
+        provider: 'orcarouter',
+        resolvedModel: 'openai/gpt-4o-mini',
+        usage: { inputTokens: 24, outputTokens: 8 },
+        reason: null,
+        retryAfterSeconds: null,
+      }),
+    });
+  });
+
+  await page.goto('/');
+  await page.locator('#semantic').check();
+  await uploadJson(page, {
+    data: [
+      { id: 'reconcile-left', author_id: 'alpha-id', created_at: '2026-08-12T00:00:00Z', text: '新機能は本日18時に公開します。' },
+      { id: 'reconcile-right', author_id: 'beta-id', created_at: '2026-08-12T00:01:00Z', text: '新機能は本日18時に公開しません。' },
+      { id: 'semantic-left', author_id: 'gamma-id', created_at: '2026-08-12T00:02:00Z', text: '本日の集まりは取りやめになりました。' },
+      { id: 'semantic-right', author_id: 'delta-id', created_at: '2026-08-12T00:03:00Z', text: '予定していたミーティングは中止です。' },
+    ],
+    includes: {
+      users: [
+        { id: 'alpha-id', username: 'alpha' },
+        { id: 'beta-id', username: 'beta' },
+        { id: 'gamma-id', username: 'gamma' },
+        { id: 'delta-id', username: 'delta' },
+      ],
+    },
+  });
+
+  await page.locator('#analyze-button').click();
+  await expect(page.locator('#results-summary')).toContainText('LLM追加 1件');
+  await expect(page.locator('#results-summary')).toContainText('LLM除外 1件');
+  await expect(page.locator('.cluster-card')).toHaveCount(1);
+  await expect(page.locator('.cluster-card')).toContainText('本日の集まりは取りやめになりました。');
+  await expect(page.locator('.cluster-card')).not.toContainText('新機能は本日18時に公開します。');
+});
