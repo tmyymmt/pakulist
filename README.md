@@ -3,8 +3,8 @@
 SNS（初期対応は X）上で同一または実質同一の投稿をしている複数アカウントを検出してリスト化し、利用者が SNS 運営へ通報できる状態にするツール。
 
 - ベース部分は OSS として公開（Apache License 2.0）
-- AI による類似投稿判定はクローズドな有料サービスとして提供する
-- 現在のローカルアプリは、正規に取得済みのCSV/JSON投稿データを決定的に検出・出力する
+- 認証・保存・課金・利用枠を伴う管理型AIによる類似投稿判定はクローズドな有料サービスとして提供する
+- 現在のローカルアプリは、正規に取得済みのCSV/JSON投稿データを決定的に検出・出力し、利用者BYOKのローカル意味的判定プロトタイプを含む
 - 利用者が明示的に有効化し、ローカルのOrcaRouter意味的類似APIを起動した場合だけ、文字列近似候補と時系列近傍の発見候補の本文を意味的類似の補助判定に送る。LLMの一致は最終近似一致へ追加し、LLMの不一致は文字列近似候補から除外する。完全一致はブラウザ内だけで判定し、外部APIへ送信しない
 
 仕様の入口は `doc/specs/full-specs.md` を参照。現行ローカルアプリの入力・検出仕様は `doc/specs/system_spec/spec.md`、意味的類似判定の評価・外部連携境界は `doc/specs/detail_design/semantic_similarity_evaluation.md` を参照する。
@@ -65,9 +65,9 @@ npm run bench:check
 
 `app/examples/sample-posts.json` は標準形式の架空投稿データである。起動後にこのファイルを選択し、既定値で検出を実行すると、URL差を無視した完全一致クラスタが1件表示される。近似一致の例を確認する場合は、閾値を0.65以下に変更して再実行する。
 
-`app/examples/sample-x-api-search.json` は、資格情報を含まないX API v2 Search形式の架空レスポンスである。このファイルを選択しても同じ完全一致クラスタが1件表示され、ローカル変換を確認できる。`app/examples/x-timeline-dummy-pakulist.json` は、5アカウント・16投稿からなり、完全一致、URL差、メンション差、近似一致を含む架空タイムラインである。意味的類似判定を有効にした画面フローの確認にも使用できる。`app/examples/x-timeline-50-semantic-cases.json` は、10アカウント・50投稿からなり、完全一致、文字列近似、語彙が近い意味的言い換え、否定・条件による非一致、非一致対照に加え、文字列近似では候補化されにくいLLM必須の言い換え4組を含む。既定の閾値0.80では、完全一致3クラスタと文字列近似・否定文の近似4クラスタが表示される。投稿038–045の4組は文字列Jaccard類似度0.00–0.09であり、最小閾値0.50にも届かないため、現行の文字列候補化の後にLLM判定を行う構成ではAPIへ送られない。これらを自動検出するには、候補生成段階に意味検索・埋め込み検索・LLMを追加する必要がある。語彙が近い意味的言い換え049–050の事前候補を含めるには、近似一致の閾値を0.70へ下げる。完全一致はOrcaRouterへ送信されず、近似一致だけが意味的類似判定の対象になる。これらのサンプルは実APIへ接続しない。実際のX API由来データを取得・利用する場合には `doc/specs/system_requirements/x_data_acquisition_policy.md` と `doc/specs/system_requirements/external_data_governance.md` の条件を満たす必要がある。
+`app/examples/sample-x-api-search.json` は、資格情報を含まないX API v2 Search形式の架空レスポンスである。このファイルを選択しても同じ完全一致クラスタが1件表示され、ローカル変換を確認できる。`app/examples/x-timeline-dummy-pakulist.json` は、5アカウント・16投稿からなり、完全一致、URL差、メンション差、近似一致を含む架空タイムラインである。`app/examples/x-timeline-50-semantic-cases.json` は、10アカウント・50投稿からなり、完全一致、文字列近似、意味的言い換え、否定・条件による非一致、非一致対照、語彙の重なりが小さい言い換え4組を含む。意味的類似判定を有効にすると、完全一致を送信せず、文字列近似候補を優先して確認した後に、投稿日時順で隣接する異アカウント投稿を発見候補として確認する。LLMの`non_match`は文字列近似候補を最終結果から除外し、LLMの`match`は発見候補を最終近似一致へ追加する。発見候補は時系列隣接に限定されるため、時系列上離れた意味的言い換えを網羅するものではない。これらのサンプルは実APIへ接続しない。実際のX API由来データを取得・利用する場合には `doc/specs/system_requirements/x_data_acquisition_policy.md` と `doc/specs/system_requirements/external_data_governance.md` の条件を満たす必要がある。
 
-`app/evaluation/semantic-similarity-cases.json` は、将来の有料AI機能を評価するための架空ラベル付きテキストである。アプリの入力ファイルではなく、外部AI APIを呼び出さない評価ユーティリティの回帰用データとして扱う。
+`app/evaluation/semantic-similarity-cases.json` は、意味的判定モデルを評価するための架空ラベル付きテキストである。アプリの入力ファイルではなく、外部AI APIを呼び出さない評価ユーティリティの回帰用データとして扱う。
 
 ## ドキュメント配置ルール
 
