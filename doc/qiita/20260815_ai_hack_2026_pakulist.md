@@ -5,7 +5,7 @@
 > | 項目 | 内容 |
 > | --- | --- |
 > | 投稿タイトル | AI HACK 2026で、SNS重複投稿を「人が判断できる候補」に変える pakulist を作った |
-> | タグ候補 | `AIHACK2026`、`JavaScript`、`Node.js`、`OSS`、`OrcaRouter` |
+> | タグ候補 | `AIHACK`、`OrcaRouter`、`JavaScript`、`Node.js`、`OSS` |
 > | プロジェクト | [pakulist](https://github.com/tmyymmt/pakulist) |
 > | ハッカソン | [AI HACK 2026](https://aihackathon.jp/) |
 
